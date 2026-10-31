@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          e instanceof CheckoutError
+          e instanceof CheckoutError || e instanceof RangeError
             ? e.message
             : "تحقق من بيانات الطلب أو حاول مجددًا.",
       },
@@ -97,7 +97,9 @@ export async function POST(request: Request) {
         status:
           e instanceof CheckoutError
             ? e.status
-            : e instanceof z.ZodError || e instanceof SyntaxError
+            : e instanceof z.ZodError ||
+                e instanceof SyntaxError ||
+                e instanceof RangeError
               ? 400
               : 503,
       },

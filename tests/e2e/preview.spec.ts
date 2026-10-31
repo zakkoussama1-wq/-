@@ -1,10 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 test("RTL preview validates inputs and updates the demo subtotal", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/form");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(
     page.getByRole("button", { name: "تأكيد الطلب وحفظه" }),
@@ -38,12 +38,14 @@ test("dashboard navigation and preview sizing", async ({ page, isMobile }) => {
     page.getByRole("heading", { name: "إدارة الطلبات المحفوظة" }),
   ).toBeVisible();
   if (isMobile) await page.getByRole("button", { name: "فتح القائمة" }).click();
-  await page
-    .getByRole("button", { name: "الولايات والبلديات", exact: true })
-    .click();
+  await page.getByRole("button", { name: "الإعدادات", exact: true }).click();
+  await page.getByText("مرجع الولايات والبلديات", { exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "سجل البيانات الجغرافية" }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "معاينة نموذج الطلب", exact: true })
+    .click();
   await page.getByRole("button", { name: "هاتف", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "هاتف", exact: true }),

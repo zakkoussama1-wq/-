@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { defaultFormSettings } from "../../src/modules/forms/settings";
 test("builder persists design and applies actual preview", async ({
   page,

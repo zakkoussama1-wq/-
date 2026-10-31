@@ -152,3 +152,42 @@ export const checkoutQuoteSchema = z.object({
   demo: z.boolean(),
 });
 export type CheckoutQuote = z.infer<typeof checkoutQuoteSchema>;
+
+/** Visible optional fields may be empty; hidden fields cannot collect customer data. */
+export function checkoutSchemaForSettings(contact: {
+  name: "required" | "optional" | "hidden";
+  phone: "required" | "optional" | "hidden";
+  address: "required" | "optional" | "hidden";
+}) {
+  const fields = checkoutInputSchema.shape;
+  const field = <T extends z.ZodType<string>>(
+    schema: T,
+    mode: "required" | "optional" | "hidden",
+  ) =>
+    mode === "hidden"
+      ? z.literal("")
+      : mode === "optional"
+        ? schema.or(z.literal(""))
+        : schema;
+  return pricingInputSchema
+    .extend({
+      ...fields,
+      name: field(fields.name, contact.name),
+      phone: field(fields.phone, contact.phone),
+      address: field(fields.address, contact.address),
+    })
+    .strict()
+    .superRefine((value, ctx) => {
+      if (
+        value.method === "home" &&
+        contact.address !== "hidden" &&
+        (contact.address === "required" || value.address !== "") &&
+        (value.address.length < 8 || !/[\p{L}]/u.test(value.address))
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["address"],
+          message: "أدخل عنوان منزل واضحًا (٨ أحرف على الأقل)",
+        });
+    });
+}

@@ -1851,10 +1851,436 @@ export const messages: Record<string, { en: string; fr: string }> = {
       en: "Both sources use the MIT license. The 69-wilaya map has been reconciled against a secondary legal reference; direct official-PDF verification is pending. Fictitious orders can be saved locally.",
       fr: "Les deux sources sont sous licence MIT. La carte des 69 wilayas a été rapprochée d’une référence juridique secondaire ; la vérification directe du PDF officiel reste en attente. Les commandes fictives peuvent être enregistrées localement.",
     },
-  تحديد: { en: "Select", fr: "Sélectionner" },
-  "سعر الخيار": { en: "Variant price", fr: "Prix de variante" },
-  "مخزون الخيار": { en: "Variant stock", fr: "Stock de variante" },
-  "متجر مربوط:": { en: "Connected store:", fr: "Boutique connectée :" },
-  "السعر الفعلي:": { en: "Effective price:", fr: "Prix effectif :" },
-  "المصدر:": { en: "Source:", fr: "Source :" },
+  تحديد: {
+    en: "Select",
+    fr: "Sélectionner",
+  },
+  "سعر الخيار": {
+    en: "Variant price",
+    fr: "Prix de variante",
+  },
+  "مخزون الخيار": {
+    en: "Variant stock",
+    fr: "Stock de variante",
+  },
+  "متجر مربوط:": {
+    en: "Connected store:",
+    fr: "Boutique connectée :",
+  },
+  "السعر الفعلي:": {
+    en: "Effective price:",
+    fr: "Prix effectif :",
+  },
+  "المصدر:": {
+    en: "Source:",
+    fr: "Source :",
+  },
+  "قائمة اختيار المنتج": {
+    en: "Product selector",
+    fr: "Sélecteur de produit",
+  },
+  "قائمة خيارات المنتج": {
+    en: "Variant selector",
+    fr: "Sélecteur de variante",
+  },
+  "صورة المنتج": {
+    en: "Product image",
+    fr: "Image du produit",
+  },
+  "سعر المنتج": {
+    en: "Product price",
+    fr: "Prix du produit",
+  },
+  "وصف النموذج": {
+    en: "Form description",
+    fr: "Description du formulaire",
+  },
+  "شريط الدفع عند الاستلام": {
+    en: "Cash-on-delivery banner",
+    fr: "Bandeau de paiement à la livraison",
+  },
+  "ملخص الأسعار": {
+    en: "Price summary",
+    fr: "Récapitulatif des prix",
+  },
+  "النص أسفل الزر": {
+    en: "Text below the button",
+    fr: "Texte sous le bouton",
+  },
+  "اختيار الكمية": {
+    en: "Quantity selector",
+    fr: "Sélecteur de quantité",
+  },
+  "اختيار الولاية والبلدية": {
+    en: "Wilaya and commune selectors",
+    fr: "Sélection de wilaya et commune",
+  },
+  "اختيار طريقة التوصيل": {
+    en: "Delivery method selector",
+    fr: "Choix du mode de livraison",
+  },
+  "حقول البحث عن المناطق": {
+    en: "Location search fields",
+    fr: "Champs de recherche des localités",
+  },
+  "اختيار التقسيم الإداري": {
+    en: "Administrative mode selector",
+    fr: "Sélecteur de découpage administratif",
+  },
+  أخضر: {
+    en: "Green",
+    fr: "Vert",
+  },
+  أحمر: {
+    en: "Red",
+    fr: "Rouge",
+  },
+  أصفر: {
+    en: "Yellow",
+    fr: "Jaune",
+  },
+  أزرق: {
+    en: "Blue",
+    fr: "Bleu",
+  },
+  برتقالي: {
+    en: "Orange",
+    fr: "Orange",
+  },
+  المحتوى: {
+    en: "Content",
+    fr: "Contenu",
+  },
+  الحقول: {
+    en: "Fields",
+    fr: "Champs",
+  },
+  التصميم: {
+    en: "Design",
+    fr: "Apparence",
+  },
+  "تحكم في المحتوى والحقول والألوان، وشاهد النتيجة فورًا.": {
+    en: "Control content, fields and colors, and preview changes instantly.",
+    fr: "Personnalisez le contenu, les champs et les couleurs avec un aperçu instantané.",
+  },
+  محفوظ: {
+    en: "Saved",
+    fr: "Enregistré",
+  },
+  "تغييرات غير محفوظة": {
+    en: "Unsaved changes",
+    fr: "Modifications non enregistrées",
+  },
+  "إعدادات النموذج": {
+    en: "Form settings",
+    fr: "Paramètres du formulaire",
+  },
+  "نصوص النموذج": {
+    en: "Form text",
+    fr: "Textes du formulaire",
+  },
+  "نص زر التأكيد": {
+    en: "Confirmation button text",
+    fr: "Texte du bouton de confirmation",
+  },
+  "نص الشريط العلوي": {
+    en: "Top banner text",
+    fr: "Texte du bandeau supérieur",
+  },
+  "تسميات الحقول": {
+    en: "Field labels",
+    fr: "Libellés des champs",
+  },
+  "المنتج المعروض": {
+    en: "Featured product",
+    fr: "Produit affiché",
+  },
+  "أول منتج متاح": {
+    en: "First available product",
+    fr: "Premier produit disponible",
+  },
+  "الخيار المعروض": {
+    en: "Featured variant",
+    fr: "Variante affichée",
+  },
+  "إظهار وإخفاء الأجزاء": {
+    en: "Show or hide sections",
+    fr: "Afficher ou masquer les sections",
+  },
+  "بيانات العميل": {
+    en: "Customer details",
+    fr: "Coordonnées du client",
+  },
+  "ظاهر وإلزامي": {
+    en: "Visible and required",
+    fr: "Visible et obligatoire",
+  },
+  "ظاهر واختياري": {
+    en: "Visible and optional",
+    fr: "Visible et facultatif",
+  },
+  مخفي: {
+    en: "Hidden",
+    fr: "Masqué",
+  },
+  "إخفاء الهاتف يحفظ الطلب دون رقم اتصال. تأكد أن لديك وسيلة أخرى للتواصل.": {
+    en: "Hiding the phone field saves orders without a contact number. Make sure you have another way to reach the customer.",
+    fr: "Masquer le téléphone enregistre des commandes sans numéro. Assurez-vous de disposer d’un autre moyen de contact.",
+  },
+  للأسفل: {
+    en: "Move down",
+    fr: "Descendre",
+  },
+  "ألوان الأزرار": {
+    en: "Button colors",
+    fr: "Couleurs des boutons",
+  },
+  "لون النص": {
+    en: "Text color",
+    fr: "Couleur du texte",
+  },
+  "تصميم مختصر": {
+    en: "Compact layout",
+    fr: "Disposition compacte",
+  },
+  "توزيع الحقول": {
+    en: "Field layout",
+    fr: "Disposition des champs",
+  },
+  "عمودان للاسم والهاتف": {
+    en: "Two columns for name and phone",
+    fr: "Deux colonnes pour le nom et le téléphone",
+  },
+  "عمود واحد": {
+    en: "One column",
+    fr: "Une colonne",
+  },
+  "طرق التوصيل في النموذج": {
+    en: "Delivery methods on this form",
+    fr: "Modes de livraison du formulaire",
+  },
+  "المنزل والمكتب — يختار العميل": {
+    en: "Home and office — customer chooses",
+    fr: "Domicile et bureau — au choix du client",
+  },
+  "الاختيار الافتراضي": {
+    en: "Default selection",
+    fr: "Sélection par défaut",
+  },
+  "دون تحديد — يختار العميل": {
+    en: "No selection — customer chooses",
+    fr: "Aucune sélection — au choix du client",
+  },
+  "فعّل أسعار المنزل والمكتب من أسعار الشحن. لا يظهر خيار متاح للعميل دون سعر مفعّل لمنطقته.":
+    {
+      en: "Enable home and office rates in Shipping. A method is available only when an enabled rate exists for the customer's region.",
+      fr: "Activez les tarifs domicile et bureau dans Livraison. Un mode est disponible uniquement avec un tarif actif pour la région du client.",
+    },
+  "حدد المنطقة الثابتة التي ستُستخدم لحساب الشحن عند إخفاء حقول المنطقة.": {
+    en: "Choose the fixed region used for pricing when location fields are hidden.",
+    fr: "Choisissez la région fixe utilisée pour le calcul lorsque les champs de localité sont masqués.",
+  },
+  "الولاية الثابتة": {
+    en: "Fixed wilaya",
+    fr: "Wilaya fixe",
+  },
+  "البلدية الثابتة": {
+    en: "Fixed commune",
+    fr: "Commune fixe",
+  },
+  "معاينة مباشرة": {
+    en: "Live preview",
+    fr: "Aperçu en direct",
+  },
+  "المعاينة لا تحفظ طلبًا. احفظ التصميم وافتح النموذج لتجربته.": {
+    en: "Preview does not save orders. Save your design and open the form to try it.",
+    fr: "L’aperçu n’enregistre pas de commande. Enregistrez le modèle et ouvrez le formulaire pour l’essayer.",
+  },
+  "اختر طريقة التوصيل المناسبة لك.": {
+    en: "Choose the delivery method that suits you.",
+    fr: "Choisissez le mode de livraison qui vous convient.",
+  },
+  "اختر طريقة التوصيل": {
+    en: "Choose a delivery method",
+    fr: "Choisissez un mode de livraison",
+  },
+  "DZ Lead Form Pro | تجربة محلية": {
+    en: "DZ Lead Form Pro · Local demo",
+    fr: "DZ Lead Form Pro · Démonstration locale",
+  },
+  اللغة: {
+    en: "Language",
+    fr: "Langue",
+  },
+  "Language / اللغة / Langue": {
+    en: "Language / اللغة / Langue",
+    fr: "Language / اللغة / Langue",
+  },
+  "ابحث بالاسم أو الهاتف أو رقم الطلب": {
+    en: "Search by name, phone or order ID",
+    fr: "Rechercher par nom, téléphone ou numéro de commande",
+  },
+  "ستظهر الطلبات هنا بعد إرسالها من النموذج. يمكنك تغيير البحث أو التصفية.": {
+    en: "Orders will appear here after submission. Try changing your search or filters.",
+    fr: "Les commandes apparaîtront ici après leur envoi. Vous pouvez modifier la recherche ou les filtres.",
+  },
+  "عميل بدون اسم": {
+    en: "Unnamed customer",
+    fr: "Client sans nom",
+  },
+  "إجمالي الطلبات": {
+    en: "Total orders",
+    fr: "Total des commandes",
+  },
+  "قيمة الطلبات": {
+    en: "Order value",
+    fr: "Valeur des commandes",
+  },
+  "بانتظار أول طلب": {
+    en: "Waiting for the first order",
+    fr: "En attente de la première commande",
+  },
+  "فعّل المكتب وحدد سعره ليتمكن العميل من اختياره بدل التوصيل إلى المنزل.": {
+    en: "Enable office delivery and set its price so customers can choose it instead of home delivery.",
+    fr: "Activez la livraison au bureau et fixez son tarif pour permettre ce choix au client.",
+  },
+  "استيراد وتصدير الأسعار": {
+    en: "Import and export rates",
+    fr: "Importer et exporter les tarifs",
+  },
+  "نزّل جدول الأسعار أو ارفع ملف CSV لتحديث مجموعة من المناطق دفعة واحدة.": {
+    en: "Download the rate table or upload a CSV to update multiple regions at once.",
+    fr: "Téléchargez les tarifs ou importez un CSV pour actualiser plusieurs régions à la fois.",
+  },
+  "تنزيل الأسعار الحالية": {
+    en: "Download current rates",
+    fr: "Télécharger les tarifs actuels",
+  },
+  "تحديث الأسعار من ملف": {
+    en: "Update rates from a file",
+    fr: "Actualiser les tarifs depuis un fichier",
+  },
+  "استخدم ملف التصدير قالبًا. تُرفض الصفوف المكررة أو غير الصالحة دون تغيير أسعارك.":
+    {
+      en: "Use an exported file as a template. Invalid or duplicate rows are rejected without changing your rates.",
+      fr: "Utilisez un export comme modèle. Les lignes invalides ou dupliquées sont refusées sans modifier vos tarifs.",
+    },
+  "ملخص أداء متجرك وأحدث الطلبات في مكان واحد.": {
+    en: "Your store's performance and latest orders in one place.",
+    fr: "Les performances de votre boutique et ses commandes au même endroit.",
+  },
+  "راجع الطلبات وتابع تأكيدها وتجهيزها وتسليمها.": {
+    en: "Review orders and track confirmation, preparation and delivery.",
+    fr: "Consultez les commandes et suivez confirmation, préparation et livraison.",
+  },
+  "أدر منتجاتك وأسعارها وخياراتها ومخزونها.": {
+    en: "Manage products, prices, variants and inventory.",
+    fr: "Gérez vos produits, prix, variantes et stocks.",
+  },
+  "صمّم نموذج طلب يناسب متجرك وعميلك.": {
+    en: "Design an order form that fits your store and your customers.",
+    fr: "Créez un formulaire adapté à votre boutique et à vos clients.",
+  },
+  "أسعار منظمة لكل ولاية وبلدية، للمنزل والمكتب.": {
+    en: "Organized home and office rates for every wilaya and commune.",
+    fr: "Des tarifs domicile et bureau organisés par wilaya et commune.",
+  },
+  "أرقام واضحة تساعدك على متابعة نشاط متجرك.": {
+    en: "Clear numbers to help you track your store's activity.",
+    fr: "Des chiffres clairs pour suivre l’activité de votre boutique.",
+  },
+  "إعدادات الخدمات المتاحة لمتجرك.": {
+    en: "Settings for services available to your store.",
+    fr: "Paramètres des services disponibles pour votre boutique.",
+  },
+  "خصومات المتجر والإعدادات الإضافية.": {
+    en: "Store discounts and additional settings.",
+    fr: "Remises de la boutique et paramètres supplémentaires.",
+  },
+  "فتح النموذج": {
+    en: "Open form",
+    fr: "Ouvrir le formulaire",
+  },
+  "أضف منتجاتك وصورها وأسعارها.": {
+    en: "Add your products, images and prices.",
+    fr: "Ajoutez vos produits, images et prix.",
+  },
+  "تخصيص النموذج": {
+    en: "Customize form",
+    fr: "Personnaliser le formulaire",
+  },
+  "اختر الحقول والألوان التي تناسب متجرك.": {
+    en: "Choose fields and colors that fit your store.",
+    fr: "Choisissez les champs et couleurs adaptés à votre boutique.",
+  },
+  "ضبط أسعار التوصيل": {
+    en: "Set delivery rates",
+    fr: "Configurer les tarifs de livraison",
+  },
+  "حدد أسعار المنزل والمكتب لكل مناطقك.": {
+    en: "Set home and office rates for your regions.",
+    fr: "Fixez les tarifs domicile et bureau pour vos régions.",
+  },
+  "مرجع الولايات والبلديات": {
+    en: "Wilaya and commune reference",
+    fr: "Référentiel des wilayas et communes",
+  },
+  "تستخدم هذه البيانات لربط عنوان العميل بسعر الشحن. لا تحتاج تعديلها لإدارة أسعار التوصيل.":
+    {
+      en: "This data connects customer locations to shipping prices. You do not need to edit it to manage rates.",
+      fr: "Ces données relient l’adresse du client au tarif de livraison. Leur modification n’est pas nécessaire pour gérer vos prix.",
+    },
+  "إغلاق المعاينة": {
+    en: "Close preview",
+    fr: "Fermer l’aperçu",
+  },
+  "الكمية ثابتة في هذا النموذج.": {
+    en: "Quantity is fixed on this form.",
+    fr: "La quantité est fixe sur ce formulaire.",
+  },
+  "منطقة التوصيل ثابتة في هذا النموذج.": {
+    en: "The delivery region is fixed on this form.",
+    fr: "La région de livraison est fixe sur ce formulaire.",
+  },
+  "المنتج غير مخصص لهذا النموذج.": {
+    en: "This product is not configured for this form.",
+    fr: "Ce produit n’est pas prévu pour ce formulaire.",
+  },
+  "الخيار غير مخصص لهذا النموذج.": {
+    en: "This variant is not configured for this form.",
+    fr: "Cette variante n’est pas prévue pour ce formulaire.",
+  },
+  "أدخل معلوماتك وسنتواصل معك لتأكيد الطلب.": {
+    en: "Enter your details and we will contact you to confirm.",
+    fr: "Saisissez vos coordonnées, nous vous contacterons pour confirmer.",
+  },
+  "بياناتك آمنة وتُستخدم لتوصيل طلبك فقط.": {
+    en: "Your details are kept safe and used only to deliver your order.",
+    fr: "Vos coordonnées sont protégées et utilisées uniquement pour livrer votre commande.",
+  },
+  "الدفع عند الاستلام": {
+    en: "Cash on delivery",
+    fr: "Paiement à la livraison",
+  },
+  "حدد ولاية وبلدية ثابتتين قبل إخفاء المنطقة.": {
+    en: "Choose a fixed wilaya and commune before hiding location fields.",
+    fr: "Choisissez une wilaya et une commune fixes avant de masquer la localité.",
+  },
+  "اختر طريقة توصيل واحدة قبل إخفاء اختيار التوصيل.": {
+    en: "Select one delivery method before hiding the method selector.",
+    fr: "Choisissez un seul mode avant de masquer le sélecteur de livraison.",
+  },
+  "الاسم واللقب": {
+    en: "First and last name",
+    fr: "Nom et prénom",
+  },
+  "طريقة التوصيل غير متاحة في هذا النموذج.": {
+    en: "This delivery method is not available on this form.",
+    fr: "Ce mode de livraison n’est pas disponible sur ce formulaire.",
+  },
+  تسمية: { en: "Label", fr: "Libellé" },
+  "نصوص القوائم وملخص الأسعار": {
+    en: "Selector and price summary labels",
+    fr: "Libellés des listes et du récapitulatif",
+  },
 };

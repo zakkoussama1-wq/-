@@ -66,6 +66,11 @@ for (const language of ["ar", "fr", "en"] as const)
     await expect(
       page.getByRole("heading", { name: w.title, exact: true }),
     ).toBeVisible();
+    await expect(page.locator("#checkout-product")).toHaveCount(0);
+    await expect(page.locator("#product-variant")).toHaveCount(0);
+    await expect(page.locator("#wilaya-search")).toHaveCount(0);
+    await expect(page.locator("#commune-search")).toHaveCount(0);
+    await expect(page.locator("#administrative-mode")).toHaveCount(0);
     await expect(page.locator("#wilaya option")).toHaveCount(59);
     await page.locator("#wilaya").selectOption("16");
     await expect(page.locator("#commune")).toBeEnabled();
@@ -75,6 +80,13 @@ for (const language of ["ar", "fr", "en"] as const)
       .getAttribute("value");
     expect(commune).toBeTruthy();
     await page.locator("#commune").selectOption(commune!);
+    await expect(
+      page.getByRole("radio", { name: new RegExp(w.home) }),
+    ).not.toBeChecked();
+    await expect(
+      page.getByRole("radio", { name: new RegExp(w.office) }),
+    ).not.toBeChecked();
+    await page.getByRole("radio", { name: new RegExp(w.home) }).check();
     await expect(
       page.getByRole("button", { name: w.submit, exact: true }),
     ).toBeEnabled();
@@ -86,6 +98,12 @@ for (const language of ["ar", "fr", "en"] as const)
     await page
       .getByLabel(w.address, { exact: false })
       .fill("12 Rue de Test Alger");
+    const formBox = await page.getByTestId("lead-form").boundingBox();
+    expect(formBox!.height).toBeLessThan(800);
+    await page.screenshot({
+      path: `test-results-local/form-${language}-${test.info().project.name}.png`,
+      fullPage: true,
+    });
     const admin = await context.newPage();
     await admin.goto("/dashboard");
     await expect(admin.locator("html")).toHaveAttribute("lang", language);

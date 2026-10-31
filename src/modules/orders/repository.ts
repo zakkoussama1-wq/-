@@ -1,9 +1,11 @@
+import { getFormSettings } from "../forms/repository";
+import { formValidationSchema } from "../forms/policy";
 import { Database as DatabaseSync } from "../storage/database";
 import { mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import { z } from "zod";
-import { validationRequestSchema } from "../checkout/schema";
+import type { validationRequestSchema } from "../checkout/schema";
 import { type validateCheckout, CheckoutError } from "../checkout/service";
 import {
   getShippingState,
@@ -54,7 +56,8 @@ function decode(row: Record<string, unknown>): StoredOrder {
 export async function createOrder(merchant: string, raw: unknown, key: string) {
   if (!/^[a-f0-9-]{36}$/.test(key))
     throw new CheckoutError("معرف منع التكرار غير صالح.", 400);
-  const input = validationRequestSchema.parse(raw);
+  const settings = await getFormSettings(merchant);
+  const input = formValidationSchema(settings).parse(raw);
   const hash = createHash("sha256")
     .update(JSON.stringify(input.customer))
     .digest("hex");
@@ -117,6 +120,7 @@ export async function createOrder(merchant: string, raw: unknown, key: string) {
       { productId, variantId, quantity, mode, wilayaCode, communeId },
       catalog,
       shipping,
+      settings,
     );
     if (!quote.methods[input.customer.method].available)
       throw new CheckoutError(quote.methods[input.customer.method].reason);

@@ -1,8 +1,8 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 test("dependent bilingual selectors and administrative remapping", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/form");
   const wilaya = page.getByLabel("الولاية", { exact: true });
   const commune = page.getByLabel("البلدية", { exact: true });
   await expect(commune).toBeDisabled();
@@ -71,7 +71,7 @@ test("geography failure exposes retry and recovers without demo fallback", async
       body: JSON.stringify({ error: "تعذر التحميل" }),
     }),
   );
-  await page.goto("/");
+  await page.goto("/form");
   await expect(
     page.getByText("تعذر تحميل القائمة. أعد المحاولة."),
   ).toBeVisible();

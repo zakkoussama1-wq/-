@@ -27,7 +27,7 @@ export default defineConfig({
       DZ_NEXT_DIST_DIR: ".next-local-tests",
       DZ_DEMO_DATA_DIR: join(tmpdir(), "dz-local-demo-" + randomUUID()),
     },
-    url: "http://127.0.0.1:3003/api/health",
+    url: "http://127.0.0.1:3003/dashboard",
     reuseExistingServer: false,
   },
   reporter: "list",

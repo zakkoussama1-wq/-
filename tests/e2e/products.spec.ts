@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 test("merchant creates a real catalog product and the customer can select it", async ({
   page,
   request,
@@ -17,6 +17,7 @@ test("merchant creates a real catalog product and the customer can select it", a
   await expect(
     page.getByText("تم حفظ المنتج وتحديث النموذج.", { exact: true }),
   ).toBeVisible();
+  await page.goto("/form");
   await page
     .getByLabel("المنتج المطلوب", { exact: true })
     .selectOption({ label: name });

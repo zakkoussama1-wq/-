@@ -10,7 +10,11 @@ import {
 export function OrderedFields({
   children,
   disabled,
+  compact = false,
+  columns = "one",
 }: {
+  compact?: boolean;
+  columns?: "one" | "two";
   children: ReactNode;
   disabled: boolean;
 }) {
@@ -23,7 +27,15 @@ export function OrderedFields({
       : 99;
   const fields = Children.toArray(children).sort((a, b) => order(a) - order(b));
   return (
-    <fieldset disabled={disabled} className="flex flex-col gap-5">
+    <fieldset
+      disabled={disabled}
+      className={
+        compact
+          ? "lead-fields grid grid-cols-2 gap-3"
+          : "lead-fields grid grid-cols-2 gap-5"
+      }
+      data-columns={columns}
+    >
       {t(fields)}
     </fieldset>
   );

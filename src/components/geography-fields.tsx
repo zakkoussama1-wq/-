@@ -70,7 +70,17 @@ export function GeographyFields({
   value,
   onChange,
   errors = {},
+  labels = {},
+  compact = false,
+  showSearch = true,
+  showAdministrativeMode = true,
+  showInfo = true,
 }: {
+  labels?: { wilaya?: string; commune?: string };
+  compact?: boolean;
+  showSearch?: boolean;
+  showAdministrativeMode?: boolean;
+  showInfo?: boolean;
   value?: GeographySelection;
   onChange?: (value: GeographySelection) => void;
   errors?: {
@@ -91,6 +101,12 @@ export function GeographyFields({
   }
   const [wilayaQuery, setWilayaQuery] = useState("");
   const [communeQuery, setCommuneQuery] = useState("");
+  useEffect(() => {
+    if (!showSearch) {
+      setWilayaQuery("");
+      setCommuneQuery("");
+    }
+  }, [showSearch]);
   const [retry, setRetry] = useState(0);
   const wilayas = useLocations(
     "wilayas",
@@ -107,31 +123,39 @@ export function GeographyFields({
     retry,
   );
   return (
-    <fieldset className="space-y-4 rounded-xl border border-slate-200 p-4">
-      <legend className="px-2 text-sm font-bold">
+    <fieldset
+      className={
+        compact
+          ? "location-fields grid grid-cols-2 gap-3"
+          : "space-y-4 rounded-xl border border-slate-200 p-4"
+      }
+    >
+      <legend className={compact ? "sr-only" : "px-2 text-sm font-bold"}>
         {t("الولاية والبلدية")}
       </legend>
-      <div>
-        <label htmlFor="administrative-mode">{t("التقسيم الإداري")}</label>
-        <select
-          id="administrative-mode"
-          value={selection.mode}
-          onChange={(e) => {
-            dispatch({
-              type: "mode",
-              value: administrativeModeSchema.parse(e.target.value),
-            });
-            setWilayaQuery("");
-            setCommuneQuery("");
-          }}
-        >
-          <option value="legacy58">{t("٥٨ ولاية · الافتراضي")}</option>
-          <option value="updated69">
-            {t("٦٩ ولاية · مرجع ثانوي قيد المطابقة الرسمية")}
-          </option>
-        </select>
-      </div>
-      {selection.mode === "updated69" && (
+      {showAdministrativeMode && (
+        <div className="col-span-2">
+          <label htmlFor="administrative-mode">{t("التقسيم الإداري")}</label>
+          <select
+            id="administrative-mode"
+            value={selection.mode}
+            onChange={(e) => {
+              dispatch({
+                type: "mode",
+                value: administrativeModeSchema.parse(e.target.value),
+              });
+              setWilayaQuery("");
+              setCommuneQuery("");
+            }}
+          >
+            <option value="legacy58">{t("٥٨ ولاية · الافتراضي")}</option>
+            <option value="updated69">
+              {t("٦٩ ولاية · مرجع ثانوي قيد المطابقة الرسمية")}
+            </option>
+          </select>
+        </div>
+      )}
+      {showInfo && selection.mode === "updated69" && (
         <p
           role="note"
           className="rounded-lg bg-amber-50 p-3 text-xs leading-6 text-amber-950"
@@ -142,19 +166,23 @@ export function GeographyFields({
         </p>
       )}
       <div>
-        <label htmlFor="wilaya-search">
-          {t("البحث عن ولاية بالعربية أو الفرنسية")}
-        </label>
-        <input
-          id="wilaya-search"
-          type="search"
-          maxLength={100}
-          value={wilayaQuery}
-          placeholder={t("مثال: المسيلة أو M’Sila")}
-          onChange={(e) => setWilayaQuery(e.target.value)}
-        />
-        <label htmlFor="wilaya" className="mt-3">
-          {t("الولاية")}
+        {showSearch && (
+          <>
+            <label htmlFor="wilaya-search">
+              {t("البحث عن ولاية بالعربية أو الفرنسية")}
+            </label>
+            <input
+              id="wilaya-search"
+              type="search"
+              maxLength={100}
+              value={wilayaQuery}
+              placeholder={t("مثال: المسيلة أو M’Sila")}
+              onChange={(e) => setWilayaQuery(e.target.value)}
+            />
+          </>
+        )}
+        <label htmlFor="wilaya" className={showSearch ? "mt-3" : ""}>
+          {t(labels.wilaya ?? "الولاية")}
         </label>
         <select
           id="wilaya"
@@ -195,20 +223,24 @@ export function GeographyFields({
         )}
       </div>
       <div>
-        <label htmlFor="commune-search">
-          {t("البحث عن بلدية بالعربية أو الفرنسية")}
-        </label>
-        <input
-          id="commune-search"
-          type="search"
-          maxLength={100}
-          value={communeQuery}
-          disabled={!selection.wilayaCode}
-          placeholder={t("ابحث ضمن الولاية المختارة")}
-          onChange={(e) => setCommuneQuery(e.target.value)}
-        />
-        <label htmlFor="commune" className="mt-3">
-          {t("البلدية")}
+        {showSearch && (
+          <>
+            <label htmlFor="commune-search">
+              {t("البحث عن بلدية بالعربية أو الفرنسية")}
+            </label>
+            <input
+              id="commune-search"
+              type="search"
+              maxLength={100}
+              value={communeQuery}
+              disabled={!selection.wilayaCode}
+              placeholder={t("ابحث ضمن الولاية المختارة")}
+              onChange={(e) => setCommuneQuery(e.target.value)}
+            />
+          </>
+        )}
+        <label htmlFor="commune" className={showSearch ? "mt-3" : ""}>
+          {t(labels.commune ?? "البلدية")}
         </label>
         <select
           id="commune"
@@ -271,11 +303,13 @@ export function GeographyFields({
           </Button>
         </div>
       )}
-      <p className="text-xs leading-6 text-slate-500">
-        {t(
-          "١٥٤١ بلدية محفوظة محليًا. تظهر بلديات الولاية المحددة فقط؛ يُمسح اختيار البلدية عند تغيير الولاية أو النظام. لا يُحفظ اختيار العميل كطلب.",
-        )}
-      </p>
+      {showInfo && (
+        <p className="col-span-2 text-xs leading-6 text-slate-500">
+          {t(
+            "١٥٤١ بلدية محفوظة محليًا. تظهر بلديات الولاية المحددة فقط؛ يُمسح اختيار البلدية عند تغيير الولاية أو النظام. لا يُحفظ اختيار العميل كطلب.",
+          )}
+        </p>
+      )}
     </fieldset>
   );
 }

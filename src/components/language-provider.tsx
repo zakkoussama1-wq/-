@@ -23,7 +23,7 @@ export function useLanguage() {
 }
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>("ar");
-  const [localDemo, setLocalDemo] = useState(false);
+
   useEffect(() => {
     const value = localStorage.getItem("dz-language");
     if (value === "fr" || value === "en") {
@@ -31,10 +31,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.dir = "ltr";
       setLanguage(value);
     }
-    fetch("/api/health")
-      .then((r) => r.json())
-      .then((d) => setLocalDemo(d.localDemo === true))
-      .catch(() => {});
   }, []);
   useEffect(() => {
     document.documentElement.lang = language;
@@ -52,8 +48,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
   return (
     <LanguageContext.Provider value={{ language, t }}>
-      <div className="relative z-50 flex flex-wrap items-center justify-center gap-4 border-b border-slate-200 bg-white p-3 text-sm">
-        <label htmlFor="app-language">
+      <div className="app-toolbar">
+        <label htmlFor="app-language" className="sr-only sm:not-sr-only !mb-0">
           {language === "ar"
             ? "اللغة"
             : language === "fr"
@@ -84,16 +80,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           {t("فتح لوحة التحكم")}
         </a>
       </div>
-      {localDemo && (
-        <p
-          role="note"
-          className="bg-amber-50 px-4 py-2 text-center text-sm leading-6 text-amber-950"
-        >
-          {t(
-            "تجربة محلية ببيانات وهمية · لا يلزم تسجيل الدخول · أسعار أولية تجريبية: المنزل 500 دج والمكتب 350 دج · لا نشر أو ربط خارجي",
-          )}
-        </p>
-      )}
+
       {children}
     </LanguageContext.Provider>
   );

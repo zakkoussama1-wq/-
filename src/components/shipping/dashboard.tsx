@@ -259,74 +259,107 @@ function ShippingManager({
           {t(notice)}
         </p>
       )}
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 className="font-bold">{t("المكتب والتبادل عبر CSV")}</h3>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            className="!w-4"
-            checked={state.genericOffice}
-            disabled={busy}
-            onChange={(e) =>
-              void mutate({
-                action: "settings",
-                genericOffice: e.target.checked,
-              })
-            }
-          />
-          {t("السماح بتوصيل المكتب العام دون قائمة مكاتب")}
-        </label>
-        <p className="text-xs leading-6 text-slate-500">
-          {t(
-            "لا توجد مكاتب استلام مسماة أو عناوين مختلقة. يظل المكتب معطّلًا حتى تفعّل هذا الإعداد وتحدد سعرًا مفعّلًا.",
-          )}
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button asChild variant="outline">
-            <a href={`/api/shipping/csv?mode=${mode}`}>
-              {t("تصدير أسعار CSV")}
-            </a>
-          </Button>
-          <div className="min-w-0 max-w-full">
-            <label htmlFor="shipping-csv">
-              {t("استيراد CSV (يحدّث القواعد الموجودة في الملف فقط)")}
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="grid gap-6 xl:grid-cols-2">
+          <div>
+            <h3 className="text-sm font-bold">{t("التوصيل إلى المكتب")}</h3>
+            <p className="mb-4 mt-2 text-xs leading-6 text-slate-500">
+              {t(
+                "فعّل المكتب وحدد سعره ليتمكن العميل من اختياره بدل التوصيل إلى المنزل.",
+              )}
+            </p>
+            <label className="!mb-0 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <input
+                className="!mt-0.5 !w-4"
+                type="checkbox"
+                checked={state.genericOffice}
+                disabled={busy}
+                onChange={(e) =>
+                  void mutate({
+                    action: "settings",
+                    genericOffice: e.target.checked,
+                  })
+                }
+              />
+              <span className="text-xs leading-6">
+                {t("السماح بتوصيل المكتب العام دون قائمة مكاتب")}
+              </span>
             </label>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={() => document.getElementById("shipping-csv")?.click()}
-            >
-              {t("اختيار ملف CSV")}
-            </Button>
-            <input
-              id="shipping-csv"
-              className="sr-only"
-              type="file"
-              accept=".csv,text/csv"
-              disabled={busy}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                if (file.size > 1000000) {
-                  setError("ملف CSV أكبر من الحجم المسموح.");
-                  return;
-                }
-                try {
-                  await mutate({ action: "import", csv: await file.text() });
-                } catch {
-                  setError("تعذر قراءة الملف.");
-                }
-                e.target.value = "";
-              }}
-            />
+          </div>
+          <div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold">
+                {t("استيراد وتصدير الأسعار")}
+              </h3>
+              <p className="mt-2 text-xs leading-6 text-slate-500">
+                {t(
+                  "نزّل جدول الأسعار أو ارفع ملف CSV لتحديث مجموعة من المناطق دفعة واحدة.",
+                )}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="mb-3 text-xs font-medium">
+                  {t("تنزيل الأسعار الحالية")}
+                </p>
+                <Button asChild variant="outline" size="sm" className="w-full">
+                  <a href={`/api/shipping/csv?mode=${mode}`}>
+                    {t("تصدير أسعار CSV")}
+                  </a>
+                </Button>
+              </div>
+              <div className="rounded-lg border border-dashed border-slate-300 p-3">
+                <p className="mb-3 text-xs font-medium">
+                  {t("تحديث الأسعار من ملف")}
+                </p>
+                <label htmlFor="shipping-csv" className="sr-only">
+                  {t("استيراد CSV (يحدّث القواعد الموجودة في الملف فقط)")}
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  disabled={busy}
+                  onClick={() =>
+                    document.getElementById("shipping-csv")?.click()
+                  }
+                >
+                  {t("اختيار ملف CSV")}
+                </Button>
+                <input
+                  id="shipping-csv"
+                  className="sr-only"
+                  type="file"
+                  accept=".csv,text/csv"
+                  disabled={busy}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 1000000) {
+                      setError("ملف CSV أكبر من الحجم المسموح.");
+                      return;
+                    }
+                    try {
+                      await mutate({
+                        action: "import",
+                        csv: await file.text(),
+                      });
+                    } catch {
+                      setError("تعذر قراءة الملف.");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] leading-5 text-slate-400">
+              {t(
+                "استخدم ملف التصدير قالبًا. تُرفض الصفوف المكررة أو غير الصالحة دون تغيير أسعارك.",
+              )}
+            </p>
           </div>
         </div>
-        <p className="text-xs leading-6 text-slate-500">
-          {t(
-            "التصدير يشمل القواعد المضبوطة فقط. لا يستورد الملف تفعيل المكتب العام. تُرفض العملية كاملة عند وجود صف خاطئ أو مكرر.",
-          )}
-        </p>
       </section>
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
         <h3 className="font-bold">{t("تعديل سعر أو تطبيق جماعي")}</h3>

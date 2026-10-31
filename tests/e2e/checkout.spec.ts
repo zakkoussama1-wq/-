@@ -1,9 +1,4 @@
-import {
-  test,
-  expect,
-  type APIRequestContext,
-  type Page,
-} from "@playwright/test";
+import { test, expect, type APIRequestContext, type Page } from "./fixtures";
 const origin = "http://127.0.0.1:3000";
 const rate = {
   available: true,
@@ -121,7 +116,7 @@ test("home form validates required fields, updates quantity and persists a corre
   ).toBe(840050);
   expect(response.request().postDataJSON().customer.phone).toBe("0551234567");
   await expect(page.getByTestId("checkout-success")).toContainText(
-    "تم حفظ طلبك بنجاح",
+    "تم استلام طلبك للمراجعة.",
   );
   await expect(confirm(page)).toBeDisabled();
   expect(errors).toEqual([]);
@@ -206,7 +201,7 @@ test("free commune override and unavailable methods cannot be bypassed", async (
     page.getByText("المنزل: التوصيل غير متاح لهذه المنطقة.", { exact: true }),
   ).toBeVisible();
   await expect(confirm(page)).toBeDisabled();
-  await expect(page.getByTestId("final-total")).toHaveText("غير متاح");
+  await expect(page.getByTestId("final-total")).toHaveText("—");
   const input = {
     productId: "demo-bag",
     variantId: "olive",
@@ -326,6 +321,9 @@ test("merchant discount editor persists and refreshes the embedded form", async 
   await expect(
     page.getByText("تم حفظ خصم التاجر وتحديث نموذج الطلب.", { exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "معاينة نموذج الطلب", exact: true })
+    .click();
   await expect(page.getByTestId("discount")).toContainText(/250.*50/);
   await page.reload();
   if (isMobile) await page.getByRole("button", { name: "فتح القائمة" }).click();

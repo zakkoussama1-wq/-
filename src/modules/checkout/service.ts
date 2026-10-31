@@ -1,10 +1,12 @@
+import type { FormSettings } from "../forms/settings";
+import { getFormSettings } from "../forms/repository";
+import { assertFormPricing, formValidationSchema } from "../forms/policy";
 import { createHash } from "node:crypto";
 import type { CheckoutCatalog } from "./schema";
 import type { ShippingState } from "../shipping/schema";
 import { getCheckoutCatalog } from "./repository";
 import {
   pricingInputSchema,
-  validationRequestSchema,
   type PricingInput,
   type CheckoutQuote,
 } from "./schema";
@@ -23,6 +25,7 @@ export class CheckoutError extends Error {
 export async function priceCheckout(
   merchant: string,
   input: PricingInput,
+  formSettings?: FormSettings,
 ): Promise<CheckoutQuote> {
   const data = pricingInputSchema.parse(input);
   return priceCheckoutSnapshot(
@@ -30,6 +33,7 @@ export async function priceCheckout(
     data,
     await getCheckoutCatalog(merchant),
     await getShippingState(merchant, data.mode),
+    formSettings,
   );
 }
 export async function priceCheckoutSnapshot(
@@ -37,7 +41,10 @@ export async function priceCheckoutSnapshot(
   data: PricingInput,
   catalog: CheckoutCatalog,
   shipping: ShippingState,
+  formSettings?: FormSettings,
 ): Promise<CheckoutQuote> {
+  const settings = formSettings ?? (await getFormSettings(merchant));
+  assertFormPricing(settings, data);
   const product = catalog.products.find((p) => p.id === data.productId);
   const variant = product?.variants.find((v) => v.id === data.variantId);
   if (!product || !variant || !product.active)
@@ -52,6 +59,11 @@ export async function priceCheckoutSnapshot(
       communeId: data.communeId,
       method,
     });
+    if (settings.deliveryMode !== "both" && settings.deliveryMode !== method) {
+      quote.available = false;
+      quote.amount = null;
+      quote.reason = "طريقة التوصيل غير متاحة في هذا النموذج.";
+    }
     const amountMinor = quote.available ? toMinor(quote.amount!) : null;
     return {
       available: quote.available,
@@ -75,6 +87,16 @@ export async function priceCheckoutSnapshot(
         discount: catalog.discount,
         revision: catalog.revision,
         shippingRevision: shipping.revision,
+        formPolicy: {
+          deliveryMode: settings.deliveryMode,
+          elements: settings.elements,
+          contact: settings.contact,
+          administrativeMode: settings.administrativeMode,
+          fixedWilaya: settings.fixedWilaya,
+          fixedCommune: settings.fixedCommune,
+          featuredProductId: settings.featuredProductId,
+          featuredVariantId: settings.featuredVariantId,
+        },
         totals,
         methods,
       }),
@@ -91,17 +113,22 @@ export async function priceCheckoutSnapshot(
   };
 }
 export async function validateCheckout(merchant: string, raw: unknown) {
-  const { customer, quoteToken } = validationRequestSchema.parse(raw);
+  const settings = await getFormSettings(merchant);
+  const { customer, quoteToken } = formValidationSchema(settings).parse(raw);
   const { productId, variantId, quantity, mode, wilayaCode, communeId } =
     customer;
-  const quote = await priceCheckout(merchant, {
-    productId,
-    variantId,
-    quantity,
-    mode,
-    wilayaCode,
-    communeId,
-  });
+  const quote = await priceCheckout(
+    merchant,
+    {
+      productId,
+      variantId,
+      quantity,
+      mode,
+      wilayaCode,
+      communeId,
+    },
+    settings,
+  );
   const method = quote.methods[customer.method];
   if (!method.available) throw new CheckoutError(method.reason);
   if (quoteToken !== quote.quoteToken)

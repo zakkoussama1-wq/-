@@ -1,9 +1,9 @@
+import { listCommunes } from "@/modules/geography/repository";
+import { getCheckoutCatalog } from "@/modules/checkout/repository";
+import { getFormSettings } from "@/modules/forms/repository";
 import { authDb } from "@/modules/auth/store";
 import { localMerchantId } from "@/modules/merchants/local-context";
-import {
-  formSettingsSchema,
-  defaultFormSettings,
-} from "@/modules/forms/settings";
+import { formSettingsSchema } from "@/modules/forms/settings";
 async function dbOpen() {
   const db = await authDb();
   await db.exec(
@@ -12,20 +12,10 @@ async function dbOpen() {
   return db;
 }
 export async function GET(request: Request) {
-  const db = await dbOpen();
-  try {
-    const row = await db
-      .prepare("SELECT settings FROM form_settings WHERE merchant_id=?")
-      .get(await localMerchantId(request, true));
-    return Response.json(
-      row
-        ? formSettingsSchema.parse(JSON.parse(String(row.settings)))
-        : defaultFormSettings,
-      { headers: { "Cache-Control": "no-store" } },
-    );
-  } finally {
-    await db.close();
-  }
+  return Response.json(
+    await getFormSettings(await localMerchantId(request, true)),
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 export async function POST(request: Request) {
   const u = new URL(request.url);
@@ -38,6 +28,28 @@ export async function POST(request: Request) {
     const text = await request.text();
     if (text.length > 8192) throw new Error();
     const settings = formSettingsSchema.parse(JSON.parse(text));
+    const merchant = await localMerchantId(request);
+    if (
+      !settings.elements.geography &&
+      !listCommunes(settings.administrativeMode, settings.fixedWilaya).some(
+        (c) => c.id === settings.fixedCommune,
+      )
+    )
+      throw new Error();
+    if (settings.featuredProductId || settings.featuredVariantId) {
+      const catalog = await getCheckoutCatalog(merchant);
+      const product = settings.featuredProductId
+        ? catalog.products.find(
+            (p) => p.id === settings.featuredProductId && p.active,
+          )
+        : catalog.products.find((p) => p.active);
+      if (
+        !product ||
+        (settings.featuredVariantId &&
+          !product.variants.some((v) => v.id === settings.featuredVariantId))
+      )
+        throw new Error();
+    }
     const db = await dbOpen();
     try {
       await db

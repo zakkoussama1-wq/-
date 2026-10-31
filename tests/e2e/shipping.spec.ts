@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 import { csvHeaders } from "../../src/modules/shipping/csv";
 import { readFileSync } from "node:fs";
 async function saved(page: Page, button: string) {
