@@ -1,0 +1,237 @@
+{
+  "legacyWilayas": 58,
+  "updatedWilayas": 69,
+  "communes": 1541,
+  "transfers": 108,
+  "candidateDisagreements": [
+    {
+      "sourceId": 66,
+      "name": "عين سيدي علي",
+      "candidate": "03",
+      "reconciled": "59"
+    },
+    {
+      "sourceId": 67,
+      "name": "البيضاء",
+      "candidate": "03",
+      "reconciled": "59"
+    },
+    {
+      "sourceId": 73,
+      "name": "قلتة سيدي سعد",
+      "candidate": "03",
+      "reconciled": "59"
+    },
+    {
+      "sourceId": 401,
+      "name": "بني بهدل",
+      "candidate": "63",
+      "reconciled": "13"
+    },
+    {
+      "sourceId": 407,
+      "name": "بني سنوس",
+      "candidate": "63",
+      "reconciled": "13"
+    },
+    {
+      "sourceId": 415,
+      "name": "العزايل",
+      "candidate": "63",
+      "reconciled": "13"
+    },
+    {
+      "sourceId": 434,
+      "name": "سبدو",
+      "candidate": "63",
+      "reconciled": "13"
+    },
+    {
+      "sourceId": 899,
+      "name": "عين بوسيف",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 900,
+      "name": "عين اقصير",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 908,
+      "name": "بوغار",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 915,
+      "name": "شلالة العذاورة",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 916,
+      "name": "شنيقل",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 918,
+      "name": "جواب",
+      "candidate": "67",
+      "reconciled": "26"
+    },
+    {
+      "sourceId": 925,
+      "name": "العوينات",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 927,
+      "name": "الكاف الاخضر",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 938,
+      "name": "أولاد عنتر",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 942,
+      "name": "أولاد امعرف",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 943,
+      "name": "أولاد هلال",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 951,
+      "name": "سيدي دامد",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 954,
+      "name": "سيدي زهار",
+      "candidate": "67",
+      "reconciled": "26"
+    },
+    {
+      "sourceId": 955,
+      "name": "سيدي زيان",
+      "candidate": "67",
+      "reconciled": "26"
+    },
+    {
+      "sourceId": 956,
+      "name": "السواقي",
+      "candidate": "67",
+      "reconciled": "26"
+    },
+    {
+      "sourceId": 958,
+      "name": "تفراوت",
+      "candidate": "26",
+      "reconciled": "67"
+    },
+    {
+      "sourceId": 996,
+      "name": "عين الملح",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 997,
+      "name": "عين فارس",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 999,
+      "name": "عين الريش",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 1005,
+      "name": "بئر فضة",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 1006,
+      "name": "بوسعادة",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 1011,
+      "name": "الهامل",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 1020,
+      "name": "امجدل",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 1021,
+      "name": "مناعة",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 1032,
+      "name": "ولتام",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 1036,
+      "name": "سيدي امحمد",
+      "candidate": "28",
+      "reconciled": "68"
+    },
+    {
+      "sourceId": 1141,
+      "name": "بريزينة",
+      "candidate": "69",
+      "reconciled": "32"
+    },
+    {
+      "sourceId": 1143,
+      "name": "شلالة",
+      "candidate": "32",
+      "reconciled": "69"
+    },
+    {
+      "sourceId": 1148,
+      "name": "المحرة",
+      "candidate": "32",
+      "reconciled": "69"
+    },
+    {
+      "sourceId": 1149,
+      "name": "الغاسول",
+      "candidate": "69",
+      "reconciled": "32"
+    },
+    {
+      "sourceId": 1151,
+      "name": "كراكدة",
+      "candidate": "69",
+      "reconciled": "32"
+    }
+  ],
+  "primaryVerification": "pending-network-access"
+}

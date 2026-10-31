@@ -1,0 +1,866 @@
+[
+  {
+    "sourceId": 64,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Aflou",
+    "referenceName": "Aflou",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 82,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Sebgag",
+    "referenceName": "Sebgag",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 83,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Sidi Bouzid",
+    "referenceName": "Sidi Bouzid",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 69,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Brida",
+    "referenceName": "Brida",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 74,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Hadj Mechri",
+    "referenceName": "Hadj Mechri",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 87,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Taouiala",
+    "referenceName": "Taouiala",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 73,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Gueltat Sidi Saad",
+    "referenceName": "Gueltat Sidi Saad",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 66,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Ain Sidi Ali",
+    "referenceName": "Ain Sidi Ali",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 67,
+    "from": "03",
+    "to": "59",
+    "sourceName": "El Beidha",
+    "referenceName": "El Beidha",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 80,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Oued Morra",
+    "referenceName": "Oued Morra",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 81,
+    "from": "03",
+    "to": "59",
+    "sourceName": "Oued M'zi",
+    "referenceName": "Oued M'Zi",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 71,
+    "from": "03",
+    "to": "59",
+    "sourceName": "El Ghicha",
+    "referenceName": "El Ghicha",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 122,
+    "from": "05",
+    "to": "60",
+    "sourceName": "Barika",
+    "referenceName": "Barika",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 125,
+    "from": "05",
+    "to": "60",
+    "sourceName": "Bitam",
+    "referenceName": "Bitam",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 149,
+    "from": "05",
+    "to": "60",
+    "sourceName": "M Doukal",
+    "referenceName": "M’Doukal",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 166,
+    "from": "05",
+    "to": "60",
+    "sourceName": "Seggana",
+    "referenceName": "Seggana",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 175,
+    "from": "05",
+    "to": "60",
+    "sourceName": "Tilatou",
+    "referenceName": "Tilatou",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 121,
+    "from": "05",
+    "to": "60",
+    "sourceName": "Azil Abedelkader",
+    "referenceName": "Abdelkader Azil",
+    "match": "reviewed-alias"
+  },
+  {
+    "sourceId": 133,
+    "from": "05",
+    "to": "60",
+    "sourceName": "Djezzar",
+    "referenceName": "Djezzar",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 157,
+    "from": "05",
+    "to": "60",
+    "sourceName": "Ouled Ammar",
+    "referenceName": "Ouled Ammar",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 245,
+    "from": "07",
+    "to": "61",
+    "sourceName": "El Kantara",
+    "referenceName": "El Kantara",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 231,
+    "from": "07",
+    "to": "61",
+    "sourceName": "Ain Zaatout",
+    "referenceName": "Ain Zaatout",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 236,
+    "from": "07",
+    "to": "61",
+    "sourceName": "Branis",
+    "referenceName": "Branis",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 246,
+    "from": "07",
+    "to": "61",
+    "sourceName": "El Outaya",
+    "referenceName": "El Outaya",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 239,
+    "from": "07",
+    "to": "61",
+    "sourceName": "Djemorah",
+    "referenceName": "Djemourah",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 369,
+    "from": "12",
+    "to": "62",
+    "sourceName": "Bir-El-Ater",
+    "referenceName": "Bir El Ater",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 385,
+    "from": "12",
+    "to": "62",
+    "sourceName": "Negrine",
+    "referenceName": "Negrine",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 378,
+    "from": "12",
+    "to": "62",
+    "sourceName": "El Ogla El Malha",
+    "referenceName": "El Ogla El Melha",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 381,
+    "from": "12",
+    "to": "62",
+    "sourceName": "Ferkane",
+    "referenceName": "Ferkane",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 414,
+    "from": "13",
+    "to": "63",
+    "sourceName": "El Aricha",
+    "referenceName": "El Aricha",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 417,
+    "from": "13",
+    "to": "63",
+    "sourceName": "El Gor",
+    "referenceName": "El Gor",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 436,
+    "from": "13",
+    "to": "63",
+    "sourceName": "Sidi Djillali",
+    "referenceName": "Sidi Djillali",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 410,
+    "from": "13",
+    "to": "63",
+    "sourceName": "Bouihi",
+    "referenceName": "El Bouihi",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 459,
+    "from": "14",
+    "to": "64",
+    "sourceName": "Ksar Chellala",
+    "referenceName": "Ksar Chellala",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 486,
+    "from": "14",
+    "to": "64",
+    "sourceName": "Zmalet El Emir Abdelkade",
+    "referenceName": "Zmalet El Emir Abdelkader",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 458,
+    "from": "14",
+    "to": "64",
+    "sourceName": "Hamadia",
+    "referenceName": "Hamadia",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 471,
+    "from": "14",
+    "to": "64",
+    "sourceName": "Rechaiga",
+    "referenceName": "Rechaiga",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 474,
+    "from": "14",
+    "to": "64",
+    "sourceName": "Serghine",
+    "referenceName": "Serguine",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 450,
+    "from": "14",
+    "to": "64",
+    "sourceName": "Bougara",
+    "referenceName": "Bougara",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 615,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Ain Oussera",
+    "referenceName": "Ain Ouessara",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 628,
+    "from": "17",
+    "to": "65",
+    "sourceName": "El Khemis",
+    "referenceName": "El Khemis",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 619,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Birine",
+    "referenceName": "Birine",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 620,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Bouira Lahdab",
+    "referenceName": "Bouira Lahdab",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 643,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Sidi Laadjel",
+    "referenceName": "Sidi Ladjel",
+    "match": "reviewed-alias"
+  },
+  {
+    "sourceId": 635,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Hassi Fedoul",
+    "referenceName": "Hassi Fedoul",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 613,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Ain Fekka",
+    "referenceName": "Ain Fekka",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 632,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Had Sahary",
+    "referenceName": "Had Sahary",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 630,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Guernini",
+    "referenceName": "Guernini",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 617,
+    "from": "17",
+    "to": "65",
+    "sourceName": "Benhar",
+    "referenceName": "Benhar",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 636,
+    "from": "17",
+    "to": "66",
+    "sourceName": "Messaad",
+    "referenceName": "Messaad",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 641,
+    "from": "17",
+    "to": "66",
+    "sourceName": "Selmana",
+    "referenceName": "Selmana",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 623,
+    "from": "17",
+    "to": "66",
+    "sourceName": "Deldoul",
+    "referenceName": "Deldoul",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 629,
+    "from": "17",
+    "to": "66",
+    "sourceName": "Faidh El Botma",
+    "referenceName": "Faidh El Botma",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 639,
+    "from": "17",
+    "to": "66",
+    "sourceName": "Oum Laadham",
+    "referenceName": "Oum Laadham",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 616,
+    "from": "17",
+    "to": "66",
+    "sourceName": "Amourah",
+    "referenceName": "Amourah",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 640,
+    "from": "17",
+    "to": "66",
+    "sourceName": "Sed Rahal",
+    "referenceName": "Sed Rahal",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 631,
+    "from": "17",
+    "to": "66",
+    "sourceName": "Guettara",
+    "referenceName": "Guettara",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 929,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Ksar El Boukhari",
+    "referenceName": "Ksar El Boukhari",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 942,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Ouled Emaaraf",
+    "referenceName": "Ouled Maaref",
+    "match": "reviewed-alias"
+  },
+  {
+    "sourceId": 951,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Sidi Demed",
+    "referenceName": "Sidi Damed",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 899,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Ain Boucif",
+    "referenceName": "Ain Boucif",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 927,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Kef Lakhdar",
+    "referenceName": "Kef Lakhdar",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 900,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Ain Ouksir",
+    "referenceName": "Ain Ouksir",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 917,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Derrag",
+    "referenceName": "Derrag",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 909,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Bouaiche",
+    "referenceName": "Bouaiche",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 915,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Chelalet El Adhaoura",
+    "referenceName": "Chelalet El Adhaoura",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 908,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Boghar",
+    "referenceName": "Boghar",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 938,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Ouled Antar",
+    "referenceName": "Ouled Antar",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 925,
+    "from": "26",
+    "to": "67",
+    "sourceName": "El Ouinet",
+    "referenceName": "El Ouinet",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 902,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Aziz",
+    "referenceName": "Aziz",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 914,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Chabounia",
+    "referenceName": "Chahbounia",
+    "match": "reviewed-alias"
+  },
+  {
+    "sourceId": 916,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Cheniguel",
+    "referenceName": "Cheniguel",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 944,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Oum El Djellil",
+    "referenceName": "Oum El Djallil",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 934,
+    "from": "26",
+    "to": "67",
+    "sourceName": "M'fatha",
+    "referenceName": "M’Fatha",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 912,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Boughzoul",
+    "referenceName": "Boughezoul",
+    "match": "reviewed-alias"
+  },
+  {
+    "sourceId": 947,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Saneg",
+    "referenceName": "Saneg",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 943,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Ouled Hellal",
+    "referenceName": "Ouled Hellal",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 958,
+    "from": "26",
+    "to": "67",
+    "sourceName": "Tafraout",
+    "referenceName": "Tafraout",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1006,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Bou Saada",
+    "referenceName": "Bou Saada",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1030,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Ouled Sidi Brahim",
+    "referenceName": "Ouled Sidi Brahim",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1034,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Sidi Ameur",
+    "referenceName": "Sidi Ameur",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1039,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Tamsa",
+    "referenceName": "Tamsa",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1015,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Khoubana",
+    "referenceName": "Khoubana",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1019,
+    "from": "28",
+    "to": "68",
+    "sourceName": "M'cif",
+    "referenceName": "M’Cif",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1031,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Ouled Slimane",
+    "referenceName": "Ouled Slimane",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1001,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Ben Srour",
+    "referenceName": "Ben Srour",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1012,
+    "from": "28",
+    "to": "68",
+    "sourceName": "El Houamed",
+    "referenceName": "El Houamed",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1011,
+    "from": "28",
+    "to": "68",
+    "sourceName": "El Hamel",
+    "referenceName": "El Hamel",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1041,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Zarzour",
+    "referenceName": "Zarzour",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1022,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Mohamed Boudiaf",
+    "referenceName": "Mouhamed Boudiaf",
+    "match": "reviewed-alias"
+  },
+  {
+    "sourceId": 1003,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Benzouh",
+    "referenceName": "Benzouh",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1005,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Bir Foda",
+    "referenceName": "Bir Foda",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 997,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Ain Fares",
+    "referenceName": "Ain Fares",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1036,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Sidi M'hamed",
+    "referenceName": "Sidi M’Hamed",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1021,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Menaa",
+    "referenceName": "Menaa",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 996,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Ain El Melh",
+    "referenceName": "Ain El Meleh",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1020,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Medjedel",
+    "referenceName": "Medjedel",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1037,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Slim",
+    "referenceName": "Slim",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 999,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Ain Rich",
+    "referenceName": "Ain Errich",
+    "match": "reviewed-alias"
+  },
+  {
+    "sourceId": 1032,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Oulteme",
+    "referenceName": "Oultem",
+    "match": "reviewed-alias"
+  },
+  {
+    "sourceId": 1010,
+    "from": "28",
+    "to": "68",
+    "sourceName": "Djebel Messaad",
+    "referenceName": "Djebel Messaad",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1145,
+    "from": "32",
+    "to": "69",
+    "sourceName": "Labiodh Sidi Cheikh",
+    "referenceName": "El Abiodh Sidi Cheikh",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1136,
+    "from": "32",
+    "to": "69",
+    "sourceName": "Ain El Orak",
+    "referenceName": "Ain El Orak",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1137,
+    "from": "32",
+    "to": "69",
+    "sourceName": "Arbaouat",
+    "referenceName": "Arbaouat",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1146,
+    "from": "32",
+    "to": "69",
+    "sourceName": "El Bnoud",
+    "referenceName": "El Bnoud",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1140,
+    "from": "32",
+    "to": "69",
+    "sourceName": "Boussemghoun",
+    "referenceName": "Boussemghoun",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1143,
+    "from": "32",
+    "to": "69",
+    "sourceName": "Chellala",
+    "referenceName": "Chellala",
+    "match": "exact-normalized-name"
+  },
+  {
+    "sourceId": 1148,
+    "from": "32",
+    "to": "69",
+    "sourceName": "El Mehara",
+    "referenceName": "El Meharra",
+    "match": "exact-normalized-name"
+  }
+]

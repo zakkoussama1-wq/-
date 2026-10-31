@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.cmd text eol=crlf
+# Preserve the exact reference bytes checked by provenance.json.
+data/geography/** -text
+*.sqlite binary

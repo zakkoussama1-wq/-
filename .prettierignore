@@ -1,0 +1,10 @@
+.next
+node_modules
+package-lock.json
+playwright-report
+test-results
+
+data/geography/
+
+.next-local*
+test-results-local

@@ -1,0 +1,57 @@
+{
+  "name": "dz-lead-form-pro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "lint": "biome lint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "geo:import": "node scripts/import-geography.mjs",
+    "geo:check": "node scripts/import-geography.mjs --check",
+    "db:seed": "npm run geo:check && node scripts/seed-geography.mjs",
+    "predev": "npm run db:seed",
+    "prebuild": "npm run db:seed",
+    "postgres:dev": "node scripts/postgres-dev.mjs",
+    "test:postgres": "node scripts/test-postgres.mjs",
+    "db:migrate-postgres": "node scripts/migrate-postgres.mjs",
+    "dev:local": "node scripts/dev-local.mjs",
+    "test:local": "playwright test --config=playwright.local.config.ts"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "7.0.0",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lucide-react": "1.66.0",
+    "next": "16.4.3",
+    "pg": "8.23.1",
+    "radix-ui": "1.8.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-hook-form": "7.91.0",
+    "tailwind-merge": "3.7.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.6.6",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "prettier": "3.9.10",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  },
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11"
+  }
+}

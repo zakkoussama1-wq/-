@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.env*
+!.env.example
+backups
+test-results
+playwright-report
+data/*.sqlite
+data/*.sqlite-*
+data/*.env
+data/*.tmp
+*.tsbuildinfo
+
+data/local-demo/
+.next-local*/
+test-results-local/

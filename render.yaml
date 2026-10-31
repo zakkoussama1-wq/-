@@ -1,0 +1,36 @@
+# Review plans and pricing in Render before applying. No deployment is triggered by this file alone.
+services:
+  - type: web
+    name: dz-lead-form-pro
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dz-lead-postgres
+          property: connectionString
+      - key: SHOPIFY_SHOP
+        value: leadformarab.myshopify.com
+      - key: SHOPIFY_CLIENT_ID
+        sync: false
+      - key: SHOPIFY_CLIENT_SECRET
+        sync: false
+      - key: SHOPIFY_REDIRECT_URI
+        sync: false
+      - key: INTEGRATIONS_ENCRYPTION_KEY
+        sync: false
+
+databases:
+  - name: dz-lead-postgres
+    databaseName: dz_lead
+    user: dz_app
+    plan: basic-256mb
+    region: frankfurt
+    ipAllowList: []

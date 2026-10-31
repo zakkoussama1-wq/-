@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS owner(id INTEGER PRIMARY KEY CHECK(id=1),salt TEXT NOT NULL,hash TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY,expires BIGINT NOT NULL,merchant_id TEXT);
+CREATE TABLE IF NOT EXISTS auth_limits(bucket INTEGER PRIMARY KEY,count INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS accounts(merchant_id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,name TEXT NOT NULL,salt TEXT NOT NULL,hash TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS form_settings(merchant_id TEXT PRIMARY KEY,settings TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS shopify_states(state_hash TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,shop TEXT NOT NULL,expires BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS shopify_connections(merchant_id TEXT PRIMARY KEY,shop TEXT NOT NULL,encrypted_token TEXT NOT NULL,scope TEXT NOT NULL,updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS checkout_settings(merchant_id TEXT PRIMARY KEY,revision INTEGER NOT NULL DEFAULT 0,discount_json TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS checkout_products(merchant_id TEXT NOT NULL,id TEXT NOT NULL,product_json TEXT NOT NULL,PRIMARY KEY(merchant_id,id));
+CREATE TABLE IF NOT EXISTS shipping_settings(merchant_id TEXT NOT NULL,mode TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 0,generic_office INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(merchant_id,mode));
+CREATE TABLE IF NOT EXISTS shipping_rules(merchant_id TEXT NOT NULL,mode TEXT NOT NULL,scope TEXT NOT NULL,target TEXT NOT NULL,rule_json TEXT NOT NULL,PRIMARY KEY(merchant_id,mode,scope,target),FOREIGN KEY(merchant_id,mode) REFERENCES shipping_settings(merchant_id,mode));
+CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,key TEXT NOT NULL,hash TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,data TEXT NOT NULL,UNIQUE(merchant_id,key));
+CREATE INDEX IF NOT EXISTS order_tenant_date ON orders(merchant_id,created_at);
+CREATE TABLE IF NOT EXISTS submission_limits(merchant_id TEXT NOT NULL,phone_hash TEXT NOT NULL,bucket INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(merchant_id,phone_hash,bucket));

@@ -1,0 +1,25 @@
+{
+  "sources": [
+    {
+      "name": "wadiemendja/algeria-communes-wilayas",
+      "commit": "ebc590f655eb0bcef46c6f11d4b508ab52ce834f",
+      "license": "MIT"
+    },
+    {
+      "name": "islam-re/Algeria-wilayas",
+      "commit": "bfb29814117d11a6a101fa07c38911f6675b748b",
+      "license": "MIT"
+    }
+  ],
+  "files": {
+    "sources/islam/JO Article 2026.md": "a0ef5c6bcc63ab0b6748e0dcc7880ea9f5507ed3d291abd624004255d5006aca",
+    "sources/islam/LICENSE": "662c118f225a8317fbf089ec004b11d9fe3cdad0e86560cd160896bf168ec649",
+    "sources/islam/wilaya-commune.json": "74e94b5ec376f046efdc438fd3225631bb50ee2b85d5910983d61e3fdca04d80",
+    "sources/wadi/LICENSE": "3621f0f852652fb3b575f00659ccf04c2de31333682e896d44aaf583d39d4c2c",
+    "sources/wadi/algeria-communes-58-wilayas.json": "ae3e7c9b480be172a591dc9d1f56c0ee3a4cb054466f17b1bac295760ed144bd",
+    "sources/wadi/algeria-communes-69-wilayas.json": "d78a10c78dae3a4903c5c478a68b5e0708b93585812d5356ca02b9a6f3b1546d"
+  },
+  "primaryVerification": "pending-network-access",
+  "officialReference": "https://www.joradp.dz/FTP/JO-FRANCAIS/2026/F2026025.pdf",
+  "notes": "Updated mapping reconciled against the secondary source law transcription. Direct official PDF verification is pending. Source IDs are internal, not official commune codes."
+}
