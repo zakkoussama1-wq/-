@@ -1,4 +1,91 @@
 export const messages: Record<string, { en: string; fr: string }> = {
+  تحديث: { en: "Refresh", fr: "Actualiser" },
+  "إعادة المحاولة": { en: "Try again", fr: "Réessayer" },
+  الإجمالي: { en: "Total", fr: "Total" },
+  العميل: { en: "Customer", fr: "Client" },
+  المنتج: { en: "Product", fr: "Produit" },
+  "حالات الطلبات": { en: "Order statuses", fr: "Statuts des commandes" },
+  "عدد الطلبات": { en: "Order count", fr: "Nombre de commandes" },
+  "كل الحالات": { en: "All statuses", fr: "Tous les statuts" },
+  "بيانات الطلبات المحفوظة": {
+    en: "Saved order data",
+    fr: "Données des commandes enregistrées",
+  },
+  "الفترة الزمنية": { en: "Date range", fr: "Période" },
+  "كل الفترات": { en: "All time", fr: "Toutes les périodes" },
+  "آخر 7 أيام": { en: "Last 7 days", fr: "7 derniers jours" },
+  "آخر 30 يومًا": { en: "Last 30 days", fr: "30 derniers jours" },
+  "تحقق من الاتصال ثم أعد المحاولة. لم تتغير بياناتك.": {
+    en: "Check your connection and try again. Your data is unchanged.",
+    fr: "Vérifiez votre connexion et réessayez. Vos données sont conservées.",
+  },
+  "جميع الحالات": { en: "All statuses", fr: "Tous les statuts" },
+  "باستثناء الملغاة، وليست إيرادات محصّلة": {
+    en: "Excludes cancellations; not collected revenue",
+    fr: "Hors annulations ; pas des recettes encaissées",
+  },
+  "بانتظار التأكيد": { en: "Awaiting confirmation", fr: "À confirmer" },
+  "طلبات تحتاج إلى مراجعتك": {
+    en: "Orders that need your review",
+    fr: "Commandes à examiner",
+  },
+  "طلبات مسلّمة": { en: "Delivered orders", fr: "Commandes livrées" },
+  "حسب الحالة المحفوظة": {
+    en: "Based on saved status",
+    fr: "Selon le statut enregistré",
+  },
+  "نشاط الطلبات": { en: "Order activity", fr: "Activité des commandes" },
+  "التوقيت العالمي UTC": { en: "UTC time", fr: "Heure UTC" },
+  "عدد الطلبات اليومية": {
+    en: "Daily order count",
+    fr: "Nombre de commandes par jour",
+  },
+  "يشمل المخطط جميع حالات الطلبات خلال الفترة الموضحة.": {
+    en: "Chart includes all order statuses in the period shown.",
+    fr: "Le graphique inclut tous les statuts sur la période affichée.",
+  },
+  "لا توجد طلبات خلال هذه الأيام. سيظهر النشاط عند حفظ طلب.": {
+    en: "No orders during these days. Activity will appear when an order is saved.",
+    fr: "Aucune commande sur ces jours. L’activité apparaîtra après enregistrement.",
+  },
+  "الأعداد من طلباتك الفعلية فقط.": {
+    en: "Counts reflect your actual orders only.",
+    fr: "Les chiffres proviennent uniquement de vos commandes réelles.",
+  },
+  "أحدث الطلبات": { en: "Recent orders", fr: "Commandes récentes" },
+  "آخر 5 نتائج ضمن الفترة المحددة": {
+    en: "Up to 5 results in the selected period",
+    fr: "Jusqu’à 5 résultats sur la période choisie",
+  },
+  "إدارة الطلبات": { en: "Manage orders", fr: "Gérer les commandes" },
+  "البحث في أحدث الطلبات": {
+    en: "Search recent orders",
+    fr: "Rechercher les commandes récentes",
+  },
+  "تصفية حسب الحالة": { en: "Filter by status", fr: "Filtrer par statut" },
+  "جار تحميل الطلبات": { en: "Loading orders", fr: "Chargement des commandes" },
+  "لا توجد نتائج مطابقة": {
+    en: "No matching results",
+    fr: "Aucun résultat correspondant",
+  },
+  "ابدأ بطلبك الأول": {
+    en: "Start with your first order",
+    fr: "Commencez par votre première commande",
+  },
+  "غيّر البحث أو الحالة أو الفترة الزمنية.": {
+    en: "Change your search, status or date range.",
+    fr: "Modifiez la recherche, le statut ou la période.",
+  },
+  "افتح نموذج الطلب وأرسل طلبًا تجريبيًا؛ سيظهر هنا بعد حفظه.": {
+    en: "Open the order form and submit a test order; it will appear here once saved.",
+    fr: "Ouvrez le formulaire et envoyez une commande test ; elle apparaîtra ici après enregistrement.",
+  },
+  "إدارة المنتجات": { en: "Manage products", fr: "Gérer les produits" },
+  "إغلاق الإشعار": { en: "Dismiss notification", fr: "Fermer la notification" },
+  "تم تحديث بيانات النظرة العامة": {
+    en: "Overview data refreshed",
+    fr: "Données du récapitulatif actualisées",
+  },
   "05 XX XX XX XX أو +213": {
     en: "05 XX XX XX XX or +213",
     fr: "05 XX XX XX XX ou +213",

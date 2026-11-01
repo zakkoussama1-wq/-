@@ -18,12 +18,13 @@ import {
   Truck,
   X,
 } from "lucide-react";
-import { useLanguage } from "./language-provider";
+import { LanguageSwitcher, useLanguage } from "./language-provider";
 import { notifyCheckoutChanged } from "./checkout/live-updates";
 import { ProductsDashboard } from "./products/dashboard";
 import { IntegrationsDashboard } from "./checkout/integrations-dashboard";
 import { FormBuilder } from "./checkout/form-builder";
 import { OrdersDashboard } from "./orders/dashboard";
+import { OverviewDashboard } from "./overview/dashboard";
 import { DiscountSettings } from "./checkout/discount-settings";
 import { ShippingDashboard } from "./shipping/dashboard";
 import { GeographySummary } from "./geography-summary";
@@ -74,6 +75,7 @@ const sections = [
 export function Workspace() {
   const { t } = useLanguage();
   const previewRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
   const router = useRouter();
   const [localDemo, setLocalDemo] = useState(false);
   const [interactive, setInteractive] = useState(false);
@@ -112,15 +114,16 @@ export function Workspace() {
     };
   }, [preview, menu]);
   useEffect(() => {
-    if (!preview) return;
+    if (!preview && !menu) return;
+    const container = preview ? previewRef : sidebarRef;
     const previous = document.activeElement as HTMLElement | null;
     const selector =
       'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),[tabindex="0"]';
-    previewRef.current?.querySelector<HTMLElement>(selector)?.focus();
+    container.current?.querySelector<HTMLElement>(selector)?.focus();
     const trap = (event: KeyboardEvent) => {
       if (event.key !== "Tab") return;
       const items = Array.from(
-        previewRef.current?.querySelectorAll<HTMLElement>(selector) ?? [],
+        container.current?.querySelectorAll<HTMLElement>(selector) ?? [],
       );
       const first = items[0],
         last = items[items.length - 1];
@@ -138,7 +141,7 @@ export function Workspace() {
       window.removeEventListener("keydown", trap);
       previous?.focus();
     };
-  }, [preview]);
+  }, [preview, menu]);
   const saved = () => {
     setRefresh((n) => n + 1);
     notifyCheckoutChanged();
@@ -157,40 +160,42 @@ export function Workspace() {
         <button
           type="button"
           aria-label={t("إغلاق القائمة")}
-          className="fixed inset-0 top-14 z-30 bg-slate-900/35 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/35 backdrop-blur-sm lg:hidden"
           onClick={() => setMenu(false)}
         />
       )}
       <aside
+        ref={sidebarRef}
+        id="workspace-navigation"
         aria-label={t("القائمة الرئيسية")}
         className={`app-sidebar ${menu ? "is-open" : ""}`}
       >
-        <div className="flex items-center gap-2.5 border-b border-white/10 px-4 py-5">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#b5e4ca] text-[#12352c]">
+        <div className="sidebar-brand">
+          <span className="sidebar-brand-icon">
             <ShoppingBag size={20} />
           </span>
           <div className="min-w-0">
-            <b dir="ltr" className="block text-sm tracking-tight text-white">
-              DZ Lead Form <span className="text-[#b5e4ca]">Pro</span>
+            <b dir="ltr" className="block text-sm tracking-tight">
+              DZ Lead Form <span className="text-[var(--ds-accent)]">Pro</span>
             </b>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-slate-500">
               {t("لوحة إدارة التاجر")}
             </span>
           </div>
           <button
             type="button"
-            className="ms-auto text-white lg:hidden"
+            className="ms-auto text-slate-500 lg:hidden"
             aria-label={t("إغلاق القائمة")}
             onClick={() => setMenu(false)}
           >
             <X size={18} />
           </button>
         </div>
-        <div className="mx-3 my-4 flex items-center gap-2.5 rounded-xl bg-white/5 p-3">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-sm font-bold text-white">
+        <div className="sidebar-store">
+          <span className="sidebar-avatar">
             {(storeName || "DZ").slice(0, 1)}
           </span>
-          <p className="min-w-0 truncate text-xs font-semibold text-slate-200">
+          <p className="min-w-0 truncate text-xs font-semibold text-slate-700">
             {t(storeName || "مساحة متجرك")}
           </p>
         </div>
@@ -210,15 +215,15 @@ export function Workspace() {
               <Icon size={18} />
               <span>{t(title)}</span>
               {section === title && (
-                <span className="ms-auto h-1.5 w-1.5 rounded-full bg-[#b5e4ca]" />
+                <span className="ms-auto h-1.5 w-1.5 rounded-full bg-[var(--ds-accent)]" />
               )}
             </button>
           ))}
         </nav>
-        <div className="mt-auto border-t border-white/10 p-4">
+        <div className="mt-auto border-t border-[var(--ds-border)] p-4">
           <a
             href={formLink}
-            className="flex items-center justify-between rounded-lg px-2 py-2 text-xs text-slate-300 hover:bg-white/5"
+            className="flex items-center justify-between rounded-lg px-2 py-2 text-xs text-slate-600 hover:bg-slate-100"
           >
             <span>{t("فتح نموذج الطلب")}</span>
             <ExternalLink size={14} />
@@ -250,19 +255,22 @@ export function Workspace() {
               type="button"
               disabled={!interactive}
               aria-label={t("فتح القائمة")}
+              aria-expanded={menu}
+              aria-controls="workspace-navigation"
               className="rounded-lg border border-slate-200 p-2 lg:hidden"
               onClick={() => setMenu(true)}
             >
               <Menu size={19} />
             </button>
-            <span className="text-xs text-slate-400">DZ /</span>
+            <span className="text-xs text-slate-500">DZ /</span>
             <span className="text-sm font-semibold">{t(section)}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <span className="hidden text-xs text-slate-500 sm:block">
               {t(storeName || "مساحة متجرك")}
             </span>
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
+            <span className="sidebar-avatar rounded-full">
               {(storeName || "DZ").slice(0, 1)}
             </span>
           </div>
@@ -270,7 +278,7 @@ export function Workspace() {
         <main id="main" className="mx-auto max-w-[1320px] p-4 md:p-7">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-[22px] font-bold tracking-tight text-[#202223]">
+              <h1 className="text-[22px] font-bold tracking-tight text-[var(--ds-ink)]">
                 {t(section)}
               </h1>
               <p className="mt-2 max-w-xl text-xs leading-6 text-slate-500">
@@ -299,8 +307,8 @@ export function Workspace() {
           </div>
           {section === "نظرة عامة" && (
             <>
-              <OrdersDashboard analytics />
-              <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <OverviewDashboard onNavigate={setSection} />
+              <div className="mt-6 mb-6 grid gap-4 md:grid-cols-3">
                 {[
                   {
                     title: "إضافة منتج",
@@ -328,7 +336,7 @@ export function Workspace() {
                     disabled={!interactive}
                     className="quick-action"
                   >
-                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-800">
+                    <span className="quick-action-icon">
                       <Icon size={20} />
                     </span>
                     <span className="text-start">

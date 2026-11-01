@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./workspace.css";
 :root {
   --background: #f6f8fa;
   --foreground: #162c2a;
@@ -170,75 +171,7 @@ input[type="color"] {
   color: #475467;
 }
 .app-toolbar a:hover {
-  color: #008060;
-}
-.app-sidebar {
-  position: fixed;
-  inset-inline-start: 0;
-  top: 56px;
-  bottom: 0;
-  z-index: 40;
-  width: 232px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  background: #1c272a;
-}
-.sidebar-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  border-radius: 8px;
-  padding: 11px 12px;
-  color: #b5c0c5;
-  text-align: start;
-  font-size: 12px;
-  font-weight: 500;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-.sidebar-item:hover {
-  background: #ffffff09;
-  color: white;
-}
-.sidebar-item.active {
-  background: #ffffff12;
-  color: white;
-  font-weight: 700;
-  box-shadow: inset -3px 0 #b5e4ca;
-}
-.app-content {
-  margin-inline-start: 232px;
-  min-width: 0;
-}
-.app-topbar {
-  display: flex;
-  height: 64px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid #e3e6e8;
-  background: #fff;
-  padding: 0 28px;
-}
-.quick-action {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid #e3e6e8;
-  border-radius: 12px;
-  background: white;
-  padding: 20px;
-  box-shadow: 0 1px 2px #10182804;
-  transition:
-    box-shadow 0.2s,
-    transform 0.2s;
-}
-.quick-action:hover {
-  box-shadow: 0 5px 20px #10182809;
-  transform: translateY(-2px);
+  color: #5148bc;
 }
 .stat-card {
   border: 1px solid #e3e6e8;
