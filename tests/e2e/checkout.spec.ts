@@ -328,7 +328,13 @@ test("merchant discount editor persists and refreshes the embedded form", async 
   await page.reload();
   if (isMobile) await page.getByRole("button", { name: "فتح القائمة" }).click();
   await page.getByRole("button", { name: "الإعدادات", exact: true }).click();
-  await expect(page.getByTestId("saved-discount")).toContainText("250.5");
+  await expect(page.getByTestId("saved-discount")).toContainText(
+    new Intl.NumberFormat("ar-DZ", {
+      style: "currency",
+      currency: "DZD",
+      maximumFractionDigits: 2,
+    }).format(250.5),
+  );
 });
 test("loading validation disables editing and rapid confirmation sends one request", async ({
   page,

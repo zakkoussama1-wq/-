@@ -2,6 +2,8 @@
 import { useLanguage } from "@/components/language-provider";
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { Skeleton, Surface } from "../ui/surface";
+import { formatDzd } from "@/lib/i18n";
 import { useCheckoutCatalog } from "./use-checkout";
 import {
   discountUpdateSchema,
@@ -65,15 +67,19 @@ export function DiscountSettings({ onSaved }: { onSaved: () => void }) {
       catalog.retry();
       onSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "تعذر حفظ الخصم.");
+      setError(
+        e instanceof Error && /[\u0600-\u06ff]/.test(e.message)
+          ? e.message
+          : "تعذر حفظ الخصم.",
+      );
     } finally {
       setBusy(false);
     }
   }
   const current = catalog.catalog?.discount;
   return (
-    <section className="mb-8 space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 className="text-lg font-bold">{t("خصم نموذج الطلب")}</h2>
+    <Surface className="settings-panel">
+      <h2 className="settings-heading">{t("خصم نموذج الطلب")}</h2>
       <p className="text-sm leading-7 text-slate-600">
         {t(
           "خصم اختياري على مجموع المنتجات فقط، ولا يخفض تكلفة الشحن. يقتصر الخصم الثابت على قيمة المنتجات، ولا يصبح الإجمالي سالبًا.",
@@ -81,76 +87,88 @@ export function DiscountSettings({ onSaved }: { onSaved: () => void }) {
       </p>
       {current && (
         <p className="text-sm" data-testid="saved-discount">
-          {t("المحفوظ:")} {t(" ")}{" "}
+          {t("المحفوظ:")}{" "}
           {t(
             current.type === "none"
               ? "بدون خصم"
-              : `${current.value / 100} ${t(current.type === "fixed" ? "د.ج. ثابت" : "٪")}`,
+              : current.type === "fixed"
+                ? formatDzd(current.value / 100)
+                : `${current.value / 100}%`,
           )}
         </p>
       )}{" "}
-      {catalog.loading && <p role="status">{t("جارٍ تحميل إعدادات الخصم…")}</p>}{" "}
-      {catalog.error && <p role="alert">{t(catalog.error)}</p>}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="discount-type">{t("نوع خصم التاجر")}</label>
-          <select
-            id="discount-type"
-            value={type}
-            disabled={busy || catalog.loading || !catalog.catalog}
-            onChange={(e) => {
-              setDraft({
-                revision: catalog.catalog?.revision ?? -1,
-                type: e.target.value as Discount["type"],
-                value: "",
-              });
-              setMessage("");
-            }}
-          >
-            <option value="none">{t("بدون خصم")}</option>
-            <option value="fixed">{t("مبلغ ثابت بالدينار")}</option>
-            <option value="percent">{t("نسبة مئوية")}</option>
-          </select>
+      {catalog.loading && (
+        <div role="status" aria-label={t("جارٍ تحميل إعدادات الخصم…")}>
+          <Skeleton className="h-10 w-full" />
         </div>
-        {type !== "none" && (
+      )}{" "}
+      {catalog.error && <p role="alert">{t(catalog.error)}</p>}
+      {catalog.catalog && (
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="discount-value">
-              {t(type === "percent" ? "نسبة الخصم (٪)" : "قيمة الخصم بالدينار")}
-            </label>
-            <input
-              id="discount-value"
-              type="number"
-              min="0"
-              step="0.01"
-              max={type === "percent" ? 100 : 10000000}
-              value={value}
+            <label htmlFor="discount-type">{t("نوع خصم التاجر")}</label>
+            <select
+              id="discount-type"
+              value={type}
               disabled={busy || catalog.loading || !catalog.catalog}
-              onChange={(e) =>
+              onChange={(e) => {
                 setDraft({
                   revision: catalog.catalog?.revision ?? -1,
-                  type,
-                  value: e.target.value,
-                })
-              }
-            />
+                  type: e.target.value as Discount["type"],
+                  value: "",
+                });
+                setMessage("");
+              }}
+            >
+              <option value="none">{t("بدون خصم")}</option>
+              <option value="fixed">{t("مبلغ ثابت بالدينار")}</option>
+              <option value="percent">{t("نسبة مئوية")}</option>
+            </select>
           </div>
-        )}
+          {type !== "none" && (
+            <div>
+              <label htmlFor="discount-value">
+                {t(
+                  type === "percent" ? "نسبة الخصم (٪)" : "قيمة الخصم بالدينار",
+                )}
+              </label>
+              <input
+                id="discount-value"
+                type="number"
+                min="0"
+                step="0.01"
+                max={type === "percent" ? 100 : 10000000}
+                value={value}
+                disabled={busy || catalog.loading || !catalog.catalog}
+                onChange={(e) =>
+                  setDraft({
+                    revision: catalog.catalog?.revision ?? -1,
+                    type,
+                    value: e.target.value,
+                  })
+                }
+              />
+            </div>
+          )}
+        </div>
+      )}
+      <div className="settings-actions">
+        <Button
+          type="button"
+          disabled={busy || catalog.loading || !catalog.catalog}
+          onClick={() => void save()}
+        >
+          {t(busy ? "جارٍ حفظ الخصم…" : "حفظ خصم التاجر")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy || catalog.loading}
+          onClick={catalog.retry}
+        >
+          {t("تحديث إعدادات الخصم")}
+        </Button>
       </div>
-      <Button
-        type="button"
-        disabled={busy || catalog.loading || !catalog.catalog}
-        onClick={() => void save()}
-      >
-        {t(busy ? "جارٍ حفظ الخصم…" : "حفظ خصم التاجر")}
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        disabled={busy || catalog.loading}
-        onClick={catalog.retry}
-      >
-        {t("تحديث إعدادات الخصم")}
-      </Button>
       {error && (
         <p role="alert" className="text-sm text-red-700">
           {t(error)}
@@ -162,10 +180,8 @@ export function DiscountSettings({ onSaved }: { onSaved: () => void }) {
         </p>
       )}
       <p className="text-xs text-slate-500">
-        {t(
-          "هذه إعدادات تاجر التطوير المحلي، وليست نظام دخول أو إدارة منتجات كاملة.",
-        )}
+        {t("تُطبق التغييرات على الطلبات الجديدة بعد الحفظ.")}
       </p>
-    </section>
+    </Surface>
   );
 }

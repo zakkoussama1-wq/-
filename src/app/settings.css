@@ -1,0 +1,126 @@
+/* Remaining merchant pages share the workspace surfaces and spacing. */
+.settings-panel {
+  padding: 24px;
+  margin-bottom: 20px;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.settings-heading {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.6;
+}
+.settings-panel-header,
+.settings-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.settings-panel-header {
+  justify-content: space-between;
+}
+.settings-panel :is(input, select) {
+  border-color: var(--ds-border);
+}
+.integration-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+.integration-grid .settings-panel {
+  margin-bottom: 0;
+}
+.geography-reference {
+  border-top: 1px solid var(--ds-border);
+  padding-top: 16px;
+}
+.geography-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.geography-counts > div {
+  padding: 12px;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: #fafbfe;
+}
+.merchant-app .stat-card,
+.merchant-app .report-card {
+  border-color: var(--ds-border);
+  border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow);
+}
+.merchant-app .stat-value {
+  overflow-wrap: anywhere;
+  color: var(--ds-ink);
+  font-variant-numeric: tabular-nums;
+}
+.auth-page {
+  width: min(440px, calc(100% - 32px));
+  margin: 48px auto;
+  padding: 28px;
+  border: 1px solid #e4e7ef;
+  border-radius: 12px;
+  background: white;
+  color: #182744;
+  box-shadow: 0 4px 20px #18274408;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+.auth-page > * + * {
+  margin-top: 20px;
+}
+.auth-brand {
+  font-weight: 700;
+  font-size: 15px;
+}
+.auth-brand span {
+  color: #635bdb;
+}
+.auth-page .ds-button {
+  width: 100%;
+  min-height: 42px;
+}
+.auth-page .ds-button.bg-emerald-700 {
+  background: #635bdb;
+}
+.auth-page :is(input, button):focus-visible {
+  outline-color: #635bdb;
+}
+@media (max-width: 767px) {
+  .integration-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-panel {
+    padding: 16px;
+  }
+  .geography-counts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .geography-counts > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .geography-counts dd {
+    margin: 0;
+  }
+  .merchant-app
+    input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+  .merchant-app select:not(.language-switcher),
+  .auth-page input {
+    font-size: 16px;
+  }
+  .auth-page {
+    margin-top: 24px;
+    padding: 20px;
+  }
+}

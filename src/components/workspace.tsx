@@ -275,7 +275,11 @@ export function Workspace() {
             </span>
           </div>
         </header>
-        <main id="main" className="mx-auto max-w-[1320px] p-4 md:p-7">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="mx-auto max-w-[1320px] p-4 md:p-7"
+        >
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="text-[22px] font-bold tracking-tight text-[var(--ds-ink)]">
@@ -363,7 +367,7 @@ export function Workspace() {
           {section === "الإعدادات" && (
             <>
               <DiscountSettings onSaved={saved} />
-              <details className="rounded-xl border border-slate-200 bg-white p-5">
+              <details className="settings-panel ds-surface">
                 <summary className="cursor-pointer text-sm font-semibold">
                   {t("مرجع الولايات والبلديات")}
                 </summary>

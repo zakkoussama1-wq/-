@@ -2,11 +2,11 @@
 import { useLanguage } from "@/components/language-provider";
 import audit from "../../data/geography/audit.json";
 export function GeographySummary() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   return (
-    <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6">
-      <h2 className="text-lg font-bold">{t("سجل البيانات الجغرافية")}</h2>
-      <dl className="my-5 grid grid-cols-3 gap-4 text-sm">
+    <section className="geography-reference">
+      <h2 className="settings-heading">{t("سجل البيانات الجغرافية")}</h2>
+      <dl className="geography-counts">
         {[
           { label: "ولايات النظام الافتراضي", value: audit.legacyWilayas },
           { label: "ولايات النظام المحدّث", value: audit.updatedWilayas },
@@ -16,8 +16,10 @@ export function GeographySummary() {
             <dt className="text-xs leading-6 text-slate-500">
               {t(item.label)}
             </dt>
-            <dd className="mt-2 text-xl font-bold text-emerald-800">
-              {t(new Intl.NumberFormat("ar-DZ").format(item.value))}
+            <dd className="mt-2 text-xl font-bold text-[var(--ds-accent)]">
+              {new Intl.NumberFormat(
+                { ar: "ar-DZ", fr: "fr-DZ", en: "en-DZ" }[language],
+              ).format(item.value)}
             </dd>
           </div>
         ))}
@@ -34,9 +36,6 @@ export function GeographySummary() {
         {t(
           "المصدران مفتوحان بترخيص MIT. خريطة ٦٩ ولاية مصالَحة مع نص قانون منقول في المرجع الثاني، بعد رصد اختلافات في المصدر الأول. المطابقة المباشرة مع ملف الجريدة الرسمية معلّقة بسبب الوصول الشبكي. يمكن حفظ الطلبات الوهمية للتجربة المحلية.",
         )}
-      </p>
-      <p className="mt-4 text-xs text-slate-500">
-        {t("يمكنك تجربة البحث وتبديل النظام في النموذج أدناه.")}
       </p>
     </section>
   );

@@ -4,6 +4,7 @@
 @import "./data-pages.css";
 @import "./form-builder.css";
 @import "./customer-form.css";
+@import "./settings.css";
 :root {
   --background: #f6f8fa;
   --foreground: #162c2a;

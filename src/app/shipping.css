@@ -42,11 +42,16 @@
   color: var(--ds-muted);
   font-size: 12px;
 }
+.shipping-mode-bar > div {
+  min-width: 0;
+  max-width: 100%;
+}
 .shipping-mode-bar label {
   font-size: 11px;
 }
 .shipping-mode-bar select {
-  min-width: 184px;
+  min-width: 0;
+  max-width: 100%;
   width: auto;
 }
 .shipping-summary {

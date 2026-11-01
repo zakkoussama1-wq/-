@@ -13,14 +13,27 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [retry, setRetry] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Retry intentionally repeats the same read after a failure.
   useEffect(() => {
-    fetch("/api/auth")
-      .then((r) => r.json())
+    const controller = new AbortController();
+    setError("");
+    fetch("/api/auth", { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
       .then((d) => setConfigured(d.configured))
-      .catch(() => setError("تعذر تحميل حالة الحساب."));
-  }, []);
+      .catch(() => {
+        if (!controller.signal.aborted) setError("تعذر تحميل حالة الحساب.");
+      });
+    return () => controller.abort();
+  }, [retry]);
   return (
-    <main className="mx-auto mt-16 max-w-md space-y-5 rounded-2xl bg-white p-6">
+    <main className="auth-page">
+      <div className="auth-brand" dir="ltr">
+        DZ Lead Form <span>Pro</span>
+      </div>
       <h1 className="text-xl font-bold">
         {t(
           register
@@ -39,6 +52,7 @@ export default function Login() {
         className="space-y-4"
         onSubmit={async (e) => {
           e.preventDefault();
+          if (configured === null) return;
           setBusy(true);
           setError("");
           try {
@@ -57,7 +71,11 @@ export default function Login() {
             router.push("/dashboard");
             router.refresh();
           } catch (e) {
-            setError(e instanceof Error ? e.message : "تعذر الدخول.");
+            setError(
+              e instanceof Error && /[\u0600-\u06ff]/.test(e.message)
+                ? e.message
+                : "تعذر الدخول.",
+            );
           } finally {
             setBusy(false);
           }
@@ -67,6 +85,7 @@ export default function Login() {
         <input
           id="email"
           type="email"
+          dir="ltr"
           value={email}
           required={register}
           onChange={(e) => setEmail(e.target.value)}
@@ -76,6 +95,7 @@ export default function Login() {
           <label>
             {t("اسم المتجر")}
             <input
+              dir="auto"
               value={name}
               required
               minLength={2}
@@ -92,7 +112,9 @@ export default function Login() {
           minLength={12}
           maxLength={200}
           required
-          autoComplete={configured ? "current-password" : "new-password"}
+          autoComplete={
+            register || !configured ? "new-password" : "current-password"
+          }
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -111,10 +133,23 @@ export default function Login() {
       <Button
         variant="outline"
         type="button"
-        onClick={() => setRegister(!register)}
+        disabled={busy}
+        onClick={() => {
+          setRegister(!register);
+          setError("");
+        }}
       >
         {t(register ? "لدي حساب بالفعل" : "إنشاء حساب متجر جديد")}
       </Button>
+      {configured === null && error && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setRetry((n) => n + 1)}
+        >
+          {t("إعادة المحاولة")}
+        </Button>
+      )}
       {error && (
         <p role="alert" className="text-red-700">
           {t(error)}

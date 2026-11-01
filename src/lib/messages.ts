@@ -1,4 +1,19 @@
 export const messages: Record<string, { en: string; fr: string }> = {
+  "تُطبق التغييرات على الطلبات الجديدة بعد الحفظ.": {
+    en: "Changes apply to new orders after saving.",
+    fr: "Les modifications s’appliquent aux nouvelles commandes après l’enregistrement.",
+  },
+  متصل: { en: "Connected", fr: "Connecté" },
+  "غير متصل": { en: "Not connected", fr: "Non connecté" },
+  "جارٍ تحميل حالة الربط…": {
+    en: "Loading connection status…",
+    fr: "Chargement de l’état de connexion…",
+  },
+  "تحديث حالة الربط": {
+    en: "Refresh connection status",
+    fr: "Actualiser l’état de connexion",
+  },
+
   "رقم طلبك:": {
     en: "Your order reference:",
     fr: "Référence de votre commande :",

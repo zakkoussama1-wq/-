@@ -483,10 +483,10 @@ function AnalyticsView({ orders }: { orders: StoredOrder[] }) {
         if (!abort.signal.aborted)
           setNames(
             Object.fromEntries(
-              data.flatMap((d) =>
+              data.flatMap((d, index) =>
                 (d.items ?? []).map(
                   (w: { code: string; nameAr: string; nameLatin: string }) => [
-                    w.code,
+                    `${index === 0 ? "legacy58" : "updated69"}:${w.code}`,
                     language === "ar" ? w.nameAr : w.nameLatin,
                   ],
                 ),
@@ -540,7 +540,7 @@ function AnalyticsView({ orders }: { orders: StoredOrder[] }) {
           <div key={label} className="stat-card">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-medium text-slate-500">{t(label)}</p>
-              <Icon size={17} className="text-emerald-700" />
+              <Icon size={17} className="text-[var(--ds-accent)]" />
             </div>
             <p className="stat-value !text-xl sm:!text-2xl">{value}</p>
           </div>
@@ -554,7 +554,9 @@ function AnalyticsView({ orders }: { orders: StoredOrder[] }) {
           {
             title: "حسب الولاية",
             rows: group(
-              (o) => names[o.customer.wilayaCode] || o.customer.wilayaCode,
+              (o) =>
+                names[`${o.customer.mode}:${o.customer.wilayaCode}`] ||
+                o.customer.wilayaCode,
             ),
           },
           {
@@ -578,7 +580,7 @@ function AnalyticsView({ orders }: { orders: StoredOrder[] }) {
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className="h-full rounded-full bg-[#008060]"
+                        className="h-full rounded-full bg-[var(--ds-accent)]"
                         style={{
                           width: `${Math.round((v / Math.max(...g.rows.map((r) => r[1]))) * 100)}%`,
                         }}
