@@ -84,7 +84,9 @@ for (const language of ["ar", "fr", "en"] as const)
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
-      await expect(page.locator(".studio-preview #wilaya")).toBeEnabled();
+      await expect(
+        page.locator(".studio-preview #preview-wilaya"),
+      ).toBeEnabled();
       if (!isMobile || language === "ar")
         await page.screenshot({
           path: `${captureDirectory}/stage4-builder-${language}-${isMobile ? "mobile" : "desktop"}.png`,

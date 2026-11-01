@@ -5,11 +5,21 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Minus, Plus, ShieldCheck, Truck, Package, Check } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  ShieldCheck,
+  Truck,
+  Package,
+  Check,
+  CheckCircle2,
+  LoaderCircle,
+} from "lucide-react";
 import { useCheckoutUpdates } from "./checkout/live-updates";
 import { OrderedFields } from "./checkout/ordered-fields";
 import { GeographyFields } from "./geography-fields";
 import { Button } from "./ui/button";
+import { Skeleton } from "./ui/surface";
 import { useCheckoutCatalog, useCheckoutQuote } from "./checkout/use-checkout";
 import {
   checkoutSchemaForSettings,
@@ -62,6 +72,7 @@ export function CustomerPreview({
   return (
     <div
       data-testid="lead-form"
+      aria-busy={catalog.loading || (!design && !designError)}
       style={
         design
           ? {
@@ -73,14 +84,12 @@ export function CustomerPreview({
       className="lead-form overflow-hidden rounded-2xl border border-slate-200 shadow-sm"
     >
       {(catalog.error || designError) && (
-        <div
-          role="alert"
-          className="m-4 rounded-lg bg-red-50 p-3 text-sm text-red-800"
-        >
+        <div role="alert" className="lead-notice lead-notice-error">
           <p>{t(catalog.error || "تعذر تحميل الإعدادات.")}</p>
           <Button
             variant="outline"
             onClick={() => {
+              setDesignError(false);
               catalog.retry();
               setDesignRetry((value) => value + 1);
             }}
@@ -90,9 +99,19 @@ export function CustomerPreview({
         </div>
       )}
       {!catalog.catalog || !design ? (
-        <p role="status" className="p-5">
-          {t("جارٍ تحميل المنتج…")}
-        </p>
+        catalog.error || designError ? null : (
+          <div className="lead-loading" role="status">
+            <span>{t("جارٍ تحميل المنتج…")}</span>
+            <div className="lead-loading-product">
+              <Skeleton className="h-[72px] w-[72px]" />
+              <Skeleton className="h-12 flex-1" />
+            </div>
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        )
       ) : (
         <CheckoutForm
           catalog={catalog.catalog}
@@ -120,6 +139,9 @@ function CheckoutForm({
 }) {
   const { t } = useLanguage();
   const [deliveryChosen, setDeliveryChosen] = useState(false);
+  const receiptPanel = useRef<HTMLDivElement>(null);
+  const idPrefix = previewOnly ? "preview-" : "";
+  const fieldId = (key: string) => idPrefix + key;
   const position = (key: (typeof design.order)[number]) => ({
     order: design.order.indexOf(key),
   });
@@ -127,6 +149,7 @@ function CheckoutForm({
   const [receipt, setReceipt] = useState<{
     key: string;
     message: string;
+    orderId: string;
   } | null>(null);
   const [submitError, setSubmitError] = useState("");
   const submitting = useRef(false);
@@ -253,6 +276,15 @@ function CheckoutForm({
     !!selected?.available &&
     !catalogBlocked &&
     !!variant;
+  useEffect(() => {
+    if (!success) return;
+    receiptPanel.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "nearest",
+    });
+  }, [success]);
   async function confirm(customer: ValidatedCheckout) {
     if (submitting.current) return;
     setSubmitError("");
@@ -288,10 +320,14 @@ function CheckoutForm({
       }
       if (result.persisted !== true || typeof result.orderId !== "string")
         throw new Error("استجابة تحقق غير متوقعة.");
-      setReceipt({ key: formKey, message: result.message });
+      setReceipt({
+        key: formKey,
+        message: result.message,
+        orderId: result.orderId,
+      });
     } catch (error) {
       setSubmitError(
-        error instanceof Error
+        error instanceof Error && /[\u0600-\u06ff]/.test(error.message)
           ? error.message
           : "تعذر التحقق من الطلب. أعد المحاولة.",
       );
@@ -320,7 +356,7 @@ function CheckoutForm({
       return null;
     const label = design[`${key}Label`];
     const placeholder = design[`${key}Placeholder`];
-    const id = key === "name" ? "customer-name" : key;
+    const id = fieldId(key === "name" ? "customer-name" : key);
     return (
       <div
         key={key}
@@ -334,13 +370,15 @@ function CheckoutForm({
         <label htmlFor={id}>
           {t(label)}
           {design.contact[key] === "required" && (
-            <span className="ms-1 text-red-500">*</span>
+            <span aria-hidden="true" className="ms-1 text-red-500">
+              *
+            </span>
           )}
         </label>
         <input
           id={id}
           type={key === "phone" ? "tel" : "text"}
-          dir={key === "phone" ? "ltr" : undefined}
+          dir={key === "phone" ? "ltr" : "auto"}
           autoComplete={
             key === "name"
               ? "name"
@@ -353,11 +391,11 @@ function CheckoutForm({
           placeholder={t(placeholder)}
           aria-required={design.contact[key] === "required"}
           aria-invalid={!!errors[key]}
-          aria-describedby={errors[key] ? `${key}-error` : undefined}
+          aria-describedby={errors[key] ? fieldId(`${key}-error`) : undefined}
           {...register(key)}
         />
         {errors[key] && (
-          <p id={`${key}-error`} role="alert" className="field-error">
+          <p id={fieldId(`${key}-error`)} role="alert" className="field-error">
             {t(errors[key]?.message)}
           </p>
         )}
@@ -372,11 +410,17 @@ function CheckoutForm({
           background: design.background,
           color: design.textColor,
           "--lead-accent": design.buttonColor,
+          "--lead-focus":
+            buttonForeground(design.buttonColor) === "#ffffff"
+              ? design.buttonColor
+              : design.textColor,
+          "--lead-ink": design.textColor,
+          "--lead-surface": design.background,
         } as React.CSSProperties
       }
     >
       {elements.badge && (
-        <div className="mb-3 flex items-center justify-center gap-2 text-xs font-medium text-emerald-700">
+        <div className="lead-badge">
           <ShieldCheck size={14} />
           {t(design.badgeText)}
         </div>
@@ -384,7 +428,7 @@ function CheckoutForm({
       {(elements.productImage ||
         elements.productTitle ||
         elements.productPrice) && (
-        <div className="lead-product mb-4 flex items-center gap-3">
+        <div className="lead-product">
           {elements.productImage &&
             (product.imageUrl ? (
               <Image
@@ -447,13 +491,9 @@ function CheckoutForm({
           </div>
         </div>
       )}
-      {elements.title && (
-        <h3 className="mb-3 text-base font-bold">{t(design.title)}</h3>
-      )}
+      {elements.title && <h3 className="lead-heading">{t(design.title)}</h3>}
       {elements.subtitle && (
-        <p className="mb-4 text-xs leading-5 text-slate-500">
-          {t(design.subtitle)}
-        </p>
+        <p className="lead-description">{t(design.subtitle)}</p>
       )}
       <form
         noValidate
@@ -464,14 +504,16 @@ function CheckoutForm({
           }
           void handleSubmit(confirm)(event);
         }}
-        className="space-y-3"
+        className="lead-checkout"
         aria-busy={isSubmitting}
       >
         {elements.productSelector && (
           <div>
-            <label htmlFor="checkout-product">{t(design.labels.product)}</label>
+            <label htmlFor={fieldId("checkout-product")}>
+              {t(design.labels.product)}
+            </label>
             <select
-              id="checkout-product"
+              id={fieldId("checkout-product")}
               value={values.productId}
               disabled={isSubmitting}
               onChange={(e) => {
@@ -499,10 +541,13 @@ function CheckoutForm({
         >
           {elements.variant && (
             <div className="col-span-2" style={position("variant")}>
-              <label htmlFor="product-variant">
+              <label htmlFor={fieldId("product-variant")}>
                 {t(design.labels.variant)}
               </label>
-              <select id="product-variant" {...register("variantId")}>
+              <select
+                id={fieldId("product-variant")}
+                {...register("variantId")}
+              >
                 {product.variants.map((v) => (
                   <option key={v.id} value={v.id}>
                     {t(v.name)}
@@ -516,6 +561,7 @@ function CheckoutForm({
           {elements.geography && (
             <div className="col-span-2" style={position("geography")}>
               <GeographyFields
+                idPrefix={idPrefix}
                 compact
                 labels={{
                   wilaya: design.labels.wilaya,
@@ -549,12 +595,20 @@ function CheckoutForm({
           )}
           {elements.method && (
             <fieldset className="col-span-2" style={position("method")}>
-              <legend className="mb-2 text-xs font-semibold">
+              <legend
+                id={fieldId("delivery-label")}
+                className="mb-2 text-xs font-semibold"
+              >
                 {t(design.labels.method)}
-                <span className="ms-1 text-red-500">*</span>
+                <span aria-hidden="true" className="ms-1 text-red-500">
+                  *
+                </span>
               </legend>
               <div
-                className={`grid gap-2 ${design.deliveryMode === "both" ? "grid-cols-2" : "grid-cols-1"}`}
+                role="radiogroup"
+                aria-labelledby={fieldId("delivery-label")}
+                aria-required="true"
+                className={`lead-delivery-grid grid gap-2 ${design.deliveryMode === "both" ? "grid-cols-2" : "grid-cols-1"}`}
               >
                 {(
                   [
@@ -580,7 +634,7 @@ function CheckoutForm({
                       >
                         <input
                           type="radio"
-                          name="delivery-method"
+                          name={fieldId("delivery-method")}
                           value={id}
                           disabled={!option?.available || catalogBlocked}
                           checked={deliveryChosen && values.method === id}
@@ -636,7 +690,7 @@ function CheckoutForm({
               className="col-span-2 flex items-center justify-between"
               style={position("quantity")}
             >
-              <label htmlFor="quantity" className="!mb-0">
+              <label htmlFor={fieldId("quantity")} className="!mb-0">
                 {t(design.labels.quantity)}
               </label>
               <div className="quantity-control">
@@ -648,7 +702,11 @@ function CheckoutForm({
                 >
                   <Minus size={14} />
                 </button>
-                <input id="quantity" readOnly value={values.quantity} />
+                <input
+                  id={fieldId("quantity")}
+                  readOnly
+                  value={values.quantity}
+                />
                 <button
                   type="button"
                   aria-label={t("زيادة الكمية")}
@@ -696,16 +754,13 @@ function CheckoutForm({
             )}
             {pricing.loading && (
               <p role="status" className="text-[11px] text-slate-500">
-                {t("جارٍ تحديث السعر من الخادم…")}
+                {t("جارٍ حساب التوصيل…")}
               </p>
             )}
           </div>
         )}
         {pricing.error && (
-          <div
-            role="alert"
-            className="rounded-lg bg-red-50 p-3 text-xs text-red-700"
-          >
+          <div role="alert" className="lead-notice lead-notice-error">
             <p>{t(pricing.error)}</p>
             <Button type="button" variant="outline" onClick={pricing.retry}>
               {t("إعادة حساب السعر")}
@@ -721,33 +776,46 @@ function CheckoutForm({
           className="lead-submit w-full"
           disabled={previewOnly || isSubmitting || !canSubmit || !!success}
         >
-          <Check size={17} />
-          {t(isSubmitting ? "جارٍ التحقق على الخادم…" : design.buttonText)}
+          {isSubmitting ? (
+            <LoaderCircle
+              size={18}
+              className="animate-spin"
+              aria-hidden="true"
+            />
+          ) : (
+            <Check size={18} aria-hidden="true" />
+          )}
+          {t(isSubmitting ? "جارٍ حفظ طلبك…" : design.buttonText)}
           {!elements.summary && total !== null && (
             <span> · {formatDzd(total / 100)}</span>
           )}
         </Button>
         {submitError && (
-          <p
-            role="alert"
-            className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
-          >
+          <p role="alert" className="lead-notice lead-notice-error">
             {t(submitError)}
           </p>
         )}
         {success && (
-          <p
+          <div
             role="status"
+            ref={receiptPanel}
             data-testid="checkout-success"
-            className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800"
+            className="lead-success"
           >
-            {t(design.successMessage)}
-          </p>
+            <CheckCircle2 size={22} aria-hidden="true" />
+            <div>
+              <p>{t(design.successMessage)}</p>
+              <p data-testid="checkout-reference" className="lead-reference">
+                {t("رقم طلبك:")}{" "}
+                <bdi title={receipt?.orderId}>
+                  #{receipt?.orderId.slice(0, 8)}
+                </bdi>
+              </p>
+            </div>
+          </div>
         )}
         {elements.footer && (
-          <p className="text-center text-[11px] leading-5 text-slate-500">
-            {t(design.footerText)}
-          </p>
+          <p className="lead-footer">{t(design.footerText)}</p>
         )}
       </form>
     </div>

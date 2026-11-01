@@ -83,7 +83,7 @@ export function useCheckoutQuote(input: PricingInput | null, refresh: number) {
             locationKey,
             quote: null,
             error:
-              error instanceof Error
+              error instanceof Error && /[\u0600-\u06ff]/.test(error.message)
                 ? error.message
                 : "تعذر حساب الطلب. أعد المحاولة.",
           });

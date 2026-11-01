@@ -69,6 +69,7 @@ function useLocations(
 export function GeographyFields({
   value,
   onChange,
+  idPrefix = "",
   errors = {},
   labels = {},
   compact = false,
@@ -76,6 +77,7 @@ export function GeographyFields({
   showAdministrativeMode = true,
   showInfo = true,
 }: {
+  idPrefix?: string;
   labels?: { wilaya?: string; commune?: string };
   compact?: boolean;
   showSearch?: boolean;
@@ -88,7 +90,8 @@ export function GeographyFields({
     communeId?: string;
   };
 } = {}) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const fieldId = (key: string) => idPrefix + key;
   const [internal, internalDispatch] = useReducer(
     geographySelectionReducer,
     initialGeographySelection,
@@ -135,9 +138,11 @@ export function GeographyFields({
       </legend>
       {showAdministrativeMode && (
         <div className="col-span-2">
-          <label htmlFor="administrative-mode">{t("التقسيم الإداري")}</label>
+          <label htmlFor={fieldId("administrative-mode")}>
+            {t("التقسيم الإداري")}
+          </label>
           <select
-            id="administrative-mode"
+            id={fieldId("administrative-mode")}
             value={selection.mode}
             onChange={(e) => {
               dispatch({
@@ -166,13 +171,21 @@ export function GeographyFields({
         </p>
       )}
       <div>
+        {compact && (
+          <label htmlFor={fieldId("wilaya")}>
+            {t(labels.wilaya ?? "الولاية")}
+          </label>
+        )}
         {showSearch && (
           <>
-            <label htmlFor="wilaya-search">
+            <label
+              htmlFor={fieldId("wilaya-search")}
+              className={compact ? "sr-only" : ""}
+            >
               {t("البحث عن ولاية بالعربية أو الفرنسية")}
             </label>
             <input
-              id="wilaya-search"
+              id={fieldId("wilaya-search")}
               type="search"
               maxLength={100}
               value={wilayaQuery}
@@ -181,13 +194,20 @@ export function GeographyFields({
             />
           </>
         )}
-        <label htmlFor="wilaya" className={showSearch ? "mt-3" : ""}>
-          {t(labels.wilaya ?? "الولاية")}
-        </label>
+        {!compact && (
+          <label
+            htmlFor={fieldId("wilaya")}
+            className={showSearch ? "mt-3" : ""}
+          >
+            {t(labels.wilaya ?? "الولاية")}
+          </label>
+        )}
         <select
-          id="wilaya"
+          id={fieldId("wilaya")}
           aria-invalid={!!errors.wilayaCode}
-          aria-describedby={errors.wilayaCode ? "wilaya-error" : undefined}
+          aria-describedby={
+            errors.wilayaCode ? fieldId("wilaya-error") : undefined
+          }
           value={selection.wilayaCode}
           disabled={wilayas.loading || !!wilayas.error}
           onChange={(e) => {
@@ -207,12 +227,14 @@ export function GeographyFields({
             )}{" "}
           {wilayas.items.map((w) => (
             <option key={w.id} value={w.code}>
-              {t(w.code)} · {t(w.nameAr)} — {t(w.nameLatin)}
+              {compact
+                ? `${w.code} · ${language === "ar" ? w.nameAr : w.nameLatin}`
+                : `${w.code} · ${w.nameAr} — ${w.nameLatin}`}
             </option>
           ))}
         </select>
         {errors.wilayaCode && (
-          <p id="wilaya-error" role="alert" className="field-error">
+          <p id={fieldId("wilaya-error")} role="alert" className="field-error">
             {t(errors.wilayaCode)}
           </p>
         )}{" "}
@@ -223,13 +245,21 @@ export function GeographyFields({
         )}
       </div>
       <div>
+        {compact && (
+          <label htmlFor={fieldId("commune")}>
+            {t(labels.commune ?? "البلدية")}
+          </label>
+        )}
         {showSearch && (
           <>
-            <label htmlFor="commune-search">
+            <label
+              htmlFor={fieldId("commune-search")}
+              className={compact ? "sr-only" : ""}
+            >
               {t("البحث عن بلدية بالعربية أو الفرنسية")}
             </label>
             <input
-              id="commune-search"
+              id={fieldId("commune-search")}
               type="search"
               maxLength={100}
               value={communeQuery}
@@ -239,13 +269,20 @@ export function GeographyFields({
             />
           </>
         )}
-        <label htmlFor="commune" className={showSearch ? "mt-3" : ""}>
-          {t(labels.commune ?? "البلدية")}
-        </label>
+        {!compact && (
+          <label
+            htmlFor={fieldId("commune")}
+            className={showSearch ? "mt-3" : ""}
+          >
+            {t(labels.commune ?? "البلدية")}
+          </label>
+        )}
         <select
-          id="commune"
+          id={fieldId("commune")}
           aria-invalid={!!errors.communeId}
-          aria-describedby={errors.communeId ? "commune-error" : undefined}
+          aria-describedby={
+            errors.communeId ? fieldId("commune-error") : undefined
+          }
           value={selection.communeId}
           disabled={
             !selection.wilayaCode || communes.loading || !!communes.error
@@ -269,12 +306,16 @@ export function GeographyFields({
             )}{" "}
           {communes.items.map((c) => (
             <option key={c.id} value={c.id}>
-              {t(c.nameAr)} — {t(c.nameLatin)}
+              {compact
+                ? language === "ar"
+                  ? c.nameAr
+                  : c.nameLatin
+                : `${c.nameAr} — ${c.nameLatin}`}
             </option>
           ))}
         </select>
         {errors.communeId && (
-          <p id="commune-error" role="alert" className="field-error">
+          <p id={fieldId("commune-error")} role="alert" className="field-error">
             {t(errors.communeId)}
           </p>
         )}{" "}

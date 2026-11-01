@@ -1,4 +1,16 @@
 export const messages: Record<string, { en: string; fr: string }> = {
+  "رقم طلبك:": {
+    en: "Your order reference:",
+    fr: "Référence de votre commande :",
+  },
+  "جارٍ حساب التوصيل…": {
+    en: "Calculating delivery…",
+    fr: "Calcul de la livraison…",
+  },
+  "جارٍ حفظ طلبك…": {
+    en: "Saving your order…",
+    fr: "Enregistrement de votre commande…",
+  },
   "مرّر داخل الإعدادات لعرض بقية الخيارات.": {
     en: "Scroll within settings to see more options.",
     fr: "Faites défiler les paramètres pour voir les autres options.",

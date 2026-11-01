@@ -352,7 +352,7 @@ test("loading validation disables editing and rapid confirmation sends one reque
   await confirm(page).dblclick();
   await expect.poll(() => requests).toBe(1);
   await expect(
-    page.getByRole("button", { name: "جارٍ التحقق على الخادم…", exact: true }),
+    page.getByRole("button", { name: "جارٍ حفظ طلبك…", exact: true }),
   ).toBeDisabled();
   await expect(page.getByLabel("الاسم الكامل")).toBeDisabled();
   release();

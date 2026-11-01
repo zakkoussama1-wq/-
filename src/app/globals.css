@@ -3,6 +3,7 @@
 @import "./shipping.css";
 @import "./data-pages.css";
 @import "./form-builder.css";
+@import "./customer-form.css";
 :root {
   --background: #f6f8fa;
   --foreground: #162c2a;
@@ -206,121 +207,6 @@ input[type="color"] {
   text-align: center;
   color: #98a2b3;
 }
-/* Customer order form retains its merchant theme. */
-.lead-form {
-  background: white;
-  box-shadow: 0 5px 24px #182c2a08;
-}
-.lead-body {
-  padding: 24px;
-}
-.lead-body.is-compact {
-  padding: 18px;
-}
-.lead-form label {
-  font-size: 11px;
-  font-weight: 600;
-  margin-bottom: 5px;
-}
-.lead-form input,
-.lead-form select {
-  min-height: 42px;
-  padding: 9px 10px;
-  font-size: 12px;
-}
-.lead-form .is-compact input,
-.lead-form .is-compact select {
-  min-height: 40px;
-}
-.lead-form .lead-fields > .contact-cell {
-  min-width: 0;
-}
-.lead-form .lead-fields[data-columns="one"] > .contact-cell {
-  grid-column: 1/-1;
-}
-.lead-form .delivery-option {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 62px;
-  margin: 0;
-  padding: 10px;
-  border: 1px solid #dfe4e6;
-  border-radius: 9px;
-  cursor: pointer;
-}
-.lead-form .delivery-option input {
-  width: 14px !important;
-  height: 14px;
-  min-height: 0 !important;
-  accent-color: var(--lead-accent);
-}
-.lead-form .delivery-option.selected {
-  border-color: var(--lead-accent);
-  background: color-mix(in srgb, var(--lead-accent) 6%, white);
-}
-.lead-form .delivery-option.unavailable {
-  color: #89939b;
-  cursor: not-allowed;
-  background: #fafbfb;
-}
-:where(.lead-form) .location-fields > div {
-  min-width: 0;
-}
-.lead-summary {
-  border-radius: 9px;
-  padding: 11px 13px;
-  background: #f6f8f8;
-}
-.lead-summary > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  padding: 3px 0;
-  font-size: 11px;
-  color: #667085;
-}
-.lead-summary > div.sr-only {
-  display: none;
-}
-.lead-summary .lead-total {
-  margin-top: 5px;
-  padding-top: 9px;
-  border-top: 1px solid #e2e7e7;
-  color: #202223;
-  font-size: 13px;
-}
-.lead-form .quantity-control {
-  display: flex;
-  align-items: center;
-  border: 1px solid #dfe4e6;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.lead-form .quantity-control button {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-}
-.lead-form .quantity-control button:disabled {
-  opacity: 0.3;
-}
-.lead-form .quantity-control input {
-  width: 32px;
-  min-height: 32px;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  text-align: center;
-}
-.lead-form .lead-submit {
-  min-height: 44px;
-  border-radius: 9px;
-  font-size: 12px;
-  font-weight: 700;
-}
 @media (max-width: 1023px) {
   .app-sidebar {
     display: none;
@@ -346,12 +232,5 @@ input[type="color"] {
   }
   .app-toolbar select {
     max-width: 95px;
-  }
-  .lead-body.is-compact {
-    padding: 15px;
-  }
-  .lead-form .delivery-option {
-    padding: 8px;
-    gap: 5px;
   }
 }

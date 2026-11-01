@@ -55,7 +55,7 @@ test("builder previews colors and fields, persists them, and the public form hon
   await expect(page.getByLabel("خيار المنتج", { exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("مثال: المسيلة أو M’Sila")).toBeVisible();
   await page.getByPlaceholder("مثال: المسيلة أو M’Sila").fill("M'Sila");
-  await expect(page.locator("#wilaya option")).toHaveCount(2);
+  await expect(page.locator("#preview-wilaya option")).toHaveCount(2);
   await page
     .getByRole("switch", { name: "قائمة خيارات المنتج", exact: true })
     .uncheck();
@@ -63,7 +63,7 @@ test("builder previews colors and fields, persists them, and the public form hon
     .getByRole("switch", { name: "حقول البحث عن المناطق", exact: true })
     .uncheck();
   await expect(page.getByLabel("خيار المنتج", { exact: true })).toHaveCount(0);
-  await expect(page.locator("#wilaya option")).toHaveCount(59);
+  await expect(page.locator("#preview-wilaya option")).toHaveCount(59);
   await page.getByRole("tab", { name: "التوصيل", exact: true }).click();
   await page
     .getByLabel("طرق التوصيل في النموذج", { exact: true })
