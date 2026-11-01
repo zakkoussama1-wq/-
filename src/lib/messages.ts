@@ -1,4 +1,45 @@
 export const messages: Record<string, { en: string; fr: string }> = {
+  الخصم: { en: "Discount", fr: "Remise" },
+  "تعذر تحميل أسماء المناطق.": {
+    en: "Unable to load region names.",
+    fr: "Impossible de charger les noms des zones.",
+  },
+  "جارٍ تحميل المناطق…": {
+    en: "Loading regions…",
+    fr: "Chargement des zones…",
+  },
+  "أدر الأسعار والخيارات والمخزون من مكان واحد.": {
+    en: "Manage prices, variants and stock in one place.",
+    fr: "Gérez les prix, options et stocks au même endroit.",
+  },
+  "بحث المنتجات": { en: "Search products", fr: "Rechercher les produits" },
+  "اسم المنتج أو الخيار أو المعرف": {
+    en: "Product, variant or ID",
+    fr: "Produit, option ou identifiant",
+  },
+  "حالة المنتج": { en: "Product status", fr: "Statut du produit" },
+  "جدول المنتجات": { en: "Products table", fr: "Tableau des produits" },
+  الخيارات: { en: "Variants", fr: "Options" },
+  "السعر من": { en: "Price from", fr: "Prix à partir de" },
+  "المخزون المتتبع": { en: "Tracked stock", fr: "Stock suivi" },
+  "منتج تجريبي": { en: "Demo product", fr: "Produit de démonstration" },
+  "مع خيارات دون تتبع": {
+    en: "Includes untracked variants",
+    fr: "Avec des options non suivies",
+  },
+  "لا توجد منتجات مطابقة.": {
+    en: "No matching products.",
+    fr: "Aucun produit correspondant.",
+  },
+  "أضف منتجًا أو غيّر البحث والتصفية.": {
+    en: "Add a product or change your filters.",
+    fr: "Ajoutez un produit ou modifiez les filtres.",
+  },
+  "جدول الطلبات": { en: "Orders table", fr: "Tableau des commandes" },
+  "تم تحديث حالة الطلب.": {
+    en: "Order status updated.",
+    fr: "Statut de commande mis à jour.",
+  },
   "صف CSV رقم": { en: "CSV row", fr: "Ligne CSV n°" },
   "غير صالح أو مكرر. تحقق من المعرف والأسعار وحالات التفعيل.": {
     en: "is invalid or duplicated. Check the ID, prices and enabled statuses.",

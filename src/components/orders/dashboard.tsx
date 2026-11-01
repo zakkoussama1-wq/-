@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   ArrowDownToLine,
+  ArrowDownUp,
   CheckCircle2,
-  ClipboardList,
   PackageCheck,
   RefreshCw,
   Search,
@@ -13,18 +13,16 @@ import {
 import { useLanguage } from "@/components/language-provider";
 import type { StoredOrder, OrderStatus } from "@/modules/orders/repository";
 import { Button } from "../ui/button";
+import { Dialog } from "../ui/dialog";
+import { Surface, Skeleton, Toast } from "../ui/surface";
+import { TablePagination } from "../ui/table-pagination";
+import { OrderLocation } from "./location";
 import { formatDzd } from "@/lib/i18n";
 const labels: Record<OrderStatus, string> = {
   submitted: "قيد المراجعة",
   confirmed: "مؤكد",
   fulfilled: "تم التسليم",
   cancelled: "ملغى",
-};
-const statusClass: Record<OrderStatus, string> = {
-  submitted: "bg-amber-50 text-amber-700",
-  confirmed: "bg-blue-50 text-blue-700",
-  fulfilled: "bg-emerald-50 text-emerald-700",
-  cancelled: "bg-slate-100 text-slate-500",
 };
 const orderValue = (o: StoredOrder) =>
   o.quote.methods[o.customer.method].totalMinor ?? 0;
@@ -33,7 +31,7 @@ export function OrdersDashboard({
 }: {
   analytics?: boolean;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [orders, setOrders] = useState<StoredOrder[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
@@ -42,6 +40,17 @@ export function OrdersDashboard({
   const [date, setDate] = useState("");
   const [details, setDetails] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(10);
+  const [ascending, setAscending] = useState(false);
+  const [sort, setSort] = useState<"date" | "total">("date");
+  const [notice, setNotice] = useState("");
+  const updating = useRef(false);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 5000);
+    return () => clearTimeout(timer);
+  }, [notice]);
   async function load() {
     try {
       const r = await fetch("/api/orders");
@@ -70,6 +79,9 @@ export function OrdersDashboard({
     return () => abort.abort();
   }, []);
   async function change(id: string, next: OrderStatus) {
+    if (updating.current) return;
+    updating.current = true;
+    setError("");
     setBusy(id);
     try {
       const r = await fetch("/api/orders", {
@@ -79,9 +91,11 @@ export function OrdersDashboard({
       });
       if (!r.ok) throw new Error();
       await load();
+      setNotice("تم تحديث حالة الطلب.");
     } catch {
       setError("تعذر حفظ حالة الطلب.");
     } finally {
+      updating.current = false;
       setBusy(null);
     }
   }
@@ -93,18 +107,43 @@ export function OrdersDashboard({
         v.toLowerCase().includes(search.toLowerCase()),
       ),
   );
+  visible.sort(
+    (a, b) =>
+      (ascending ? 1 : -1) *
+      (sort === "date"
+        ? a.createdAt.localeCompare(b.createdAt)
+        : orderValue(a) - orderValue(b)),
+  );
+  const currentPage = Math.min(
+    page,
+    Math.max(1, Math.ceil(visible.length / size)),
+  );
+  const selected = orders.find((o) => o.id === details);
+  function reorder(next: "date" | "total") {
+    if (sort === next) setAscending(!ascending);
+    else {
+      setSort(next);
+      setAscending(false);
+    }
+    setPage(1);
+  }
   return (
-    <section className="mb-6 space-y-4">
+    <section className="data-page mb-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-bold">
           {t(analytics ? "تحليلات الطلبات المحفوظة" : "إدارة الطلبات المحفوظة")}
         </h2>
-        <Button variant="outline" size="sm" onClick={() => void load()}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!!busy}
+          onClick={() => void load()}
+        >
           <RefreshCw size={13} />
           {t("تحديث الطلبات")}
         </Button>
       </div>
-      {error && (
+      {error && !selected && (
         <p
           role="alert"
           className="rounded-lg bg-red-50 p-3 text-xs text-red-700"
@@ -113,12 +152,15 @@ export function OrdersDashboard({
         </p>
       )}
       {!loaded && !error && (
-        <p
+        <Surface
+          className="data-loading"
           role="status"
-          className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500"
+          aria-label={t("جارٍ تحميل الطلبات…")}
         >
-          {t("جارٍ تحميل الطلبات…")}
-        </p>
+          {[0, 1, 2].map((key) => (
+            <Skeleton key={key} className="h-12 w-full" />
+          ))}
+        </Surface>
       )}
       {loaded && analytics ? (
         <AnalyticsView orders={orders} />
@@ -136,7 +178,10 @@ export function OrdersDashboard({
                   <input
                     id="order-search"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
                     className="!pe-9"
                     placeholder={t("ابحث بالاسم أو الهاتف أو رقم الطلب")}
                   />
@@ -148,7 +193,10 @@ export function OrdersDashboard({
                   className="mt-1.5"
                   id="order-filter"
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
+                  onChange={(e) => {
+                    setStatus(e.target.value);
+                    setPage(1);
+                  }}
                 >
                   <option value="">{t("الكل")}</option>
                   {Object.entries(labels).map(([k, v]) => (
@@ -165,7 +213,10 @@ export function OrdersDashboard({
                   id="order-date"
                   type="date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={(e) => {
+                    setDate(e.target.value);
+                    setPage(1);
+                  }}
                 />
               </label>
               <Button asChild variant="outline" size="sm">
@@ -176,135 +227,241 @@ export function OrdersDashboard({
               </Button>
             </div>
           </div>
-          {loaded && !visible.length && (
-            <div className="report-card report-empty !min-h-[220px]">
-              <ClipboardList size={30} strokeWidth={1.3} />
-              <p className="mt-2 text-sm font-semibold text-slate-600">
-                {t("لا توجد طلبات مطابقة.")}
-              </p>
-              <p className="max-w-sm text-xs leading-6">
-                {t(
-                  "ستظهر الطلبات هنا بعد إرسالها من النموذج. يمكنك تغيير البحث أو التصفية.",
-                )}
-              </p>
-            </div>
-          )}
-          <div className="space-y-3">
-            {visible.map((o) => (
-              <article
-                key={o.id}
-                className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+          {loaded && (
+            <Surface>
+              <section
+                className="ds-table-scroll"
+                aria-label={t("جدول الطلبات")}
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users need to scroll the wide data table.
+                tabIndex={0}
               >
-                <div className="flex flex-wrap items-center justify-between gap-4 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-500">
-                      {(o.customer.name || "?").slice(0, 1)}
-                    </span>
-                    <div>
-                      <h3 className="text-sm font-bold">
-                        {o.customer.name || t("عميل بدون اسم")}
-                      </h3>
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        <span dir="ltr">#{o.id.slice(0, 8)}</span>
-                        <span className="mx-2">·</span>
-                        {o.createdAt.slice(0, 10)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <strong className="text-sm">
-                      {formatDzd(orderValue(o) / 100)}
-                    </strong>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${statusClass[o.status]}`}
-                    >
-                      {t(labels[o.status])}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setDetails(details === o.id ? null : o.id)}
-                    >
-                      {t("تفاصيل الطلب")}
-                    </Button>
-                  </div>
-                </div>
-                {details === o.id && (
-                  <div className="border-t border-slate-100 bg-[#fafbfc] p-4">
-                    <dl className="grid gap-x-6 gap-y-4 text-xs sm:grid-cols-2 lg:grid-cols-3">
-                      {[
-                        { label: "الهاتف", value: o.customer.phone || "—" },
-                        {
-                          label: "طريقة التوصيل",
-                          value: t(
-                            o.customer.method === "home"
-                              ? "التوصيل إلى المنزل"
-                              : "التوصيل إلى المكتب",
-                          ),
-                        },
-                        { label: "العنوان", value: o.customer.address || "—" },
-                        {
-                          label: "المنتجات",
-                          value: `${o.productName} / ${o.variantName}`,
-                        },
-                        { label: "الكمية", value: String(o.customer.quantity) },
-                        { label: "الولاية", value: o.customer.wilayaCode },
-                        { label: "البلدية", value: o.customer.communeId },
-                        {
-                          label: "مجموع المنتجات",
-                          value: formatDzd(o.quote.subtotalMinor / 100),
-                        },
-                        {
-                          label: "التوصيل",
-                          value: formatDzd(
-                            (o.quote.methods[o.customer.method].amountMinor ??
-                              0) / 100,
-                          ),
-                        },
-                      ].map((row) => (
-                        <div key={row.label}>
-                          <dt className="mb-1 text-slate-400">
-                            {t(row.label)}
-                          </dt>
-                          <dd className="break-words font-medium text-slate-700">
-                            {row.value}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                    <label className="mt-5 block max-w-xs">
-                      {t("تحديث حالة الطلب")}
-                      <select
-                        className="mt-1.5"
-                        aria-label={`${t("الحالة")} ${o.id}`}
-                        disabled={
-                          busy === o.id ||
-                          o.status === "cancelled" ||
-                          o.status === "fulfilled"
-                        }
-                        value={o.status}
-                        onChange={(e) =>
-                          void change(o.id, e.target.value as OrderStatus)
+                <table className="ds-table data-table orders-table">
+                  <thead>
+                    <tr>
+                      <th>{t("العميل")}</th>
+                      <th>{t("المنتج")}</th>
+                      <th>{t("طريقة التوصيل")}</th>
+                      <th>{t("الحالة")}</th>
+                      <th
+                        aria-sort={
+                          sort === "total"
+                            ? ascending
+                              ? "ascending"
+                              : "descending"
+                            : "none"
                         }
                       >
-                        {Object.entries(labels).map(([k, v]) => (
-                          <option
-                            value={k}
-                            key={k}
-                            disabled={
-                              k === "submitted" && o.status !== "submitted"
-                            }
-                          >
-                            {t(v)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
+                        <button type="button" onClick={() => reorder("total")}>
+                          {t("الإجمالي")}
+                          <ArrowDownUp size={13} />
+                        </button>
+                      </th>
+                      <th
+                        aria-sort={
+                          sort === "date"
+                            ? ascending
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                      >
+                        <button type="button" onClick={() => reorder("date")}>
+                          {t("التاريخ")}
+                          <ArrowDownUp size={13} />
+                        </button>
+                      </th>
+                      <th>{t("الإجراءات")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visible
+                      .slice((currentPage - 1) * size, currentPage * size)
+                      .map((o) => (
+                        <tr key={o.id} data-testid={`order-row-${o.id}`}>
+                          <td>
+                            <b>{o.customer.name || t("عميل بدون اسم")}</b>
+                            <span>
+                              <bdi dir="ltr">{o.customer.phone || "—"}</bdi>
+                            </span>
+                            <span>
+                              <bdi>#{o.id.slice(0, 8)}</bdi>
+                            </span>
+                          </td>
+                          <td>
+                            <b>{o.productName}</b>
+                            <span>
+                              {o.variantName} · {t("الكمية")}:{" "}
+                              {o.customer.quantity}
+                            </span>
+                          </td>
+                          <td>
+                            {t(
+                              o.customer.method === "home"
+                                ? "التوصيل إلى المنزل"
+                                : "التوصيل إلى المكتب",
+                            )}
+                          </td>
+                          <td>
+                            <span className={`ds-status status-${o.status}`}>
+                              {t(labels[o.status])}
+                            </span>
+                          </td>
+                          <td>{formatDzd(orderValue(o) / 100)}</td>
+                          <td>
+                            <time dateTime={o.createdAt}>
+                              {new Intl.DateTimeFormat(language, {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                                timeZone: "UTC",
+                              }).format(new Date(o.createdAt))}
+                            </time>
+                            <span>UTC</span>
+                          </td>
+                          <td>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setDetails(o.id)}
+                            >
+                              {t("تفاصيل الطلب")}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </section>
+              {!visible.length && (
+                <div className="data-empty">
+                  <h3>{t("لا توجد طلبات مطابقة.")}</h3>
+                  <p>
+                    {t(
+                      "ستظهر الطلبات هنا بعد إرسالها من النموذج. يمكنك تغيير البحث أو التصفية.",
+                    )}
+                  </p>
+                </div>
+              )}
+              <TablePagination
+                page={currentPage}
+                size={size}
+                total={visible.length}
+                onPage={setPage}
+                onSize={(n) => {
+                  setSize(n);
+                  setPage(1);
+                }}
+              />
+            </Surface>
+          )}
+          {selected && (
+            <Dialog
+              title={t("تفاصيل الطلب")}
+              busy={!!busy}
+              onClose={() => setDetails(null)}
+            >
+              <div className="ds-dialog-body">
+                <p className="data-detail-id">
+                  <bdi>{selected.id}</bdi>
+                </p>
+                <dl className="grid gap-x-6 gap-y-4 text-xs sm:grid-cols-2 lg:grid-cols-3">
+                  {[
+                    { label: "الهاتف", value: selected.customer.phone || "—" },
+                    {
+                      label: "طريقة التوصيل",
+                      value: t(
+                        selected.customer.method === "home"
+                          ? "التوصيل إلى المنزل"
+                          : "التوصيل إلى المكتب",
+                      ),
+                    },
+                    {
+                      label: "العنوان",
+                      value: selected.customer.address || "—",
+                    },
+                    {
+                      label: "المنتجات",
+                      value: `${selected.productName} / ${selected.variantName}`,
+                    },
+                    {
+                      label: "الكمية",
+                      value: String(selected.customer.quantity),
+                    },
+
+                    {
+                      label: "الخصم",
+                      value: formatDzd(
+                        (selected.quote.discountMinor ?? 0) / 100,
+                      ),
+                    },
+                    {
+                      label: "الإجمالي النهائي",
+                      value: formatDzd(orderValue(selected) / 100),
+                    },
+                    {
+                      label: "مجموع المنتجات",
+                      value: formatDzd(selected.quote.subtotalMinor / 100),
+                    },
+                    {
+                      label: "التوصيل",
+                      value: formatDzd(
+                        (selected.quote.methods[selected.customer.method]
+                          .amountMinor ?? 0) / 100,
+                      ),
+                    },
+                  ].map((row) => (
+                    <div key={row.label}>
+                      <dt className="mb-1 text-slate-500">{t(row.label)}</dt>
+                      <dd className="break-words font-medium text-slate-700">
+                        {row.value}
+                      </dd>
+                    </div>
+                  ))}
+                  <OrderLocation customer={selected.customer} />
+                </dl>
+                <label className="mt-5 block max-w-xs">
+                  {t("تحديث حالة الطلب")}
+                  <select
+                    className="mt-1.5"
+                    aria-label={`${t("الحالة")} ${selected.id}`}
+                    disabled={
+                      busy === selected.id ||
+                      selected.status === "cancelled" ||
+                      selected.status === "fulfilled"
+                    }
+                    value={selected.status}
+                    onChange={(e) =>
+                      void change(selected.id, e.target.value as OrderStatus)
+                    }
+                  >
+                    {Object.entries(labels).map(([k, v]) => (
+                      <option
+                        value={k}
+                        key={k}
+                        disabled={
+                          k === "submitted" && selected.status !== "submitted"
+                        }
+                      >
+                        {t(v)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {error && (
+                  <p role="alert" className="data-error">
+                    {t(error)}
+                  </p>
                 )}
-              </article>
-            ))}
-          </div>
+              </div>
+            </Dialog>
+          )}
+          {notice && (
+            <Toast
+              closeLabel={t("إغلاق الإشعار")}
+              onClose={() => setNotice("")}
+            >
+              {t(notice)}
+            </Toast>
+          )}
         </>
       )}
     </section>
