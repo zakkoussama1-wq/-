@@ -22,16 +22,24 @@ export function useCheckoutCatalog(refresh: number) {
     const controller = new AbortController();
     fetch(storefrontUrl("/api/checkout/catalog"), { signal: controller.signal })
       .then(async (response) => {
-        if (!response.ok) throw new Error();
+        if (!response.ok) {
+          if (response.status === 404)
+            throw new RangeError("المنتج أو الخيار المحدد غير متاح.");
+          throw new Error();
+        }
         const catalog = catalogSchema.parse(await response.json());
         if (!controller.signal.aborted) setResult({ key, catalog, error: "" });
       })
-      .catch(() => {
+      .catch((error) => {
         if (!controller.signal.aborted)
           setResult((previous) => ({
             key,
-            catalog: previous?.catalog ?? null,
-            error: "تعذر تحميل المنتج وإعدادات الخصم. أعد المحاولة.",
+            catalog:
+              error instanceof RangeError ? null : (previous?.catalog ?? null),
+            error:
+              error instanceof RangeError
+                ? error.message
+                : "تعذر تحميل المنتج وإعدادات الخصم. أعد المحاولة.",
           }));
       });
     return () => controller.abort();

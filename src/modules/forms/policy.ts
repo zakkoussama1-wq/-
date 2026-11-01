@@ -1,3 +1,4 @@
+import { simulationConsentSchema } from "../advertising/schema";
 import { z } from "zod";
 import type { PricingInput } from "../checkout/schema";
 import { checkoutSchemaForSettings } from "../checkout/schema";
@@ -7,6 +8,7 @@ export function formValidationSchema(settings: FormSettings) {
     .object({
       customer: checkoutSchemaForSettings(settings.contact),
       quoteToken: z.string().regex(/^[a-f0-9]{64}$/),
+      simulation: simulationConsentSchema.optional(),
     })
     .strict();
 }

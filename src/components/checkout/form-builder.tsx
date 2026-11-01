@@ -744,6 +744,17 @@ export function FormBuilder({ onSaved }: { onSaved: () => void }) {
               )}
               {tab === "delivery" && (
                 <div className="space-y-5">
+                  <label htmlFor="office-pickup-instructions">
+                    {t("تعليمات نقطة الاستلام (اختياري)")}
+                  </label>
+                  <textarea
+                    id="office-pickup-instructions"
+                    maxLength={300}
+                    value={settings.officePickupInstructions ?? ""}
+                    onChange={(e) =>
+                      update("officePickupInstructions", e.target.value)
+                    }
+                  />
                   <label className="editor-label">
                     {t("طرق التوصيل في النموذج")}
                     <select

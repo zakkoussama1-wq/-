@@ -1,3 +1,4 @@
+import { requestedProduct } from "@/modules/forms/product-form";
 import { listCommunes } from "@/modules/geography/repository";
 import { getCheckoutCatalog } from "@/modules/checkout/repository";
 import { getFormSettings } from "@/modules/forms/repository";
@@ -12,10 +13,25 @@ async function dbOpen() {
   return db;
 }
 export async function GET(request: Request) {
-  return Response.json(
-    await getFormSettings(await localMerchantId(request, true)),
-    { headers: { "Cache-Control": "no-store" } },
-  );
+  try {
+    const merchant = await localMerchantId(request, true);
+    const productId = requestedProduct(request);
+    if (
+      productId !== undefined &&
+      !(await getCheckoutCatalog(merchant)).products.some(
+        (p) => p.id === productId && p.active && !p.deleted,
+      )
+    )
+      return Response.json(
+        { error: "المنتج أو الخيار المحدد غير متاح." },
+        { status: 404 },
+      );
+    return Response.json(await getFormSettings(merchant, productId), {
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch {
+    return Response.json({ error: "تعذر تحميل الإعدادات." }, { status: 400 });
+  }
 }
 export async function POST(request: Request) {
   const u = new URL(request.url);

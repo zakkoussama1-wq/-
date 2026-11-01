@@ -1,10 +1,12 @@
+import { localCommerceAdapter } from "../commerce/adapter";
+import { requestedProduct } from "../forms/product-form";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { localMerchantId } from "../merchants/local-context";
 import { ConflictError } from "../shipping/repository";
-import { getCheckoutCatalog, updateDiscount } from "./repository";
+import { updateDiscount } from "./repository";
 import { discountUpdateSchema, pricingInputSchema } from "./schema";
-import { CheckoutError, priceCheckout, validateCheckout } from "./service";
+import { CheckoutError, validateCheckout } from "./service";
 function fail(error: unknown) {
   if (error instanceof ZodError)
     return NextResponse.json(
@@ -31,17 +33,21 @@ function fail(error: unknown) {
 }
 export async function readCatalog(request?: Request) {
   try {
-    const catalog = await getCheckoutCatalog(
+    const catalog = await localCommerceAdapter.catalog(
       await localMerchantId(request, true),
     );
+    const productId = request ? requestedProduct(request) : undefined;
+    const products = catalog.products.filter(
+      (p) =>
+        p.active &&
+        !p.deleted &&
+        (productId === undefined || p.id === productId),
+    );
+    if (productId !== undefined && !products.length)
+      throw new CheckoutError("المنتج أو الخيار المحدد غير متاح.", 404);
     return NextResponse.json(
-      {
-        ...catalog,
-        products: catalog.products.filter((p) => p.active && !p.deleted),
-      },
-      {
-        headers: { "Cache-Control": "no-store" },
-      },
+      { ...catalog, products },
+      { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
     return fail(error);
@@ -84,9 +90,17 @@ export async function checkoutPost(
     const merchant = await localMerchantId(request, kind !== "discount");
     let response: unknown;
     if (kind === "quote")
-      response = await priceCheckout(merchant, pricingInputSchema.parse(raw));
+      response = await localCommerceAdapter.quote(
+        merchant,
+        pricingInputSchema.parse(raw),
+        requestedProduct(request),
+      );
     else if (kind === "validate")
-      response = await validateCheckout(merchant, raw);
+      response = await validateCheckout(
+        merchant,
+        raw,
+        requestedProduct(request),
+      );
     else {
       const input = discountUpdateSchema.parse(raw);
       response = await updateDiscount(merchant, input.revision, input.discount);

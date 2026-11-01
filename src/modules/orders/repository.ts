@@ -1,3 +1,10 @@
+import {
+  ensureSimulationTables,
+  recordSimulation,
+  simulationEventId,
+  simulationSettings,
+} from "../advertising/simulation";
+import type { SimulationConsent } from "../advertising/schema";
 import { getFormSettings } from "../forms/repository";
 import { formValidationSchema } from "../forms/policy";
 import { Database as DatabaseSync } from "../storage/database";
@@ -35,6 +42,12 @@ export interface StoredOrder {
   productName: string;
   variantName: string;
   reservedStock?: boolean;
+  productSku?: string;
+  variantSku?: string;
+  productImageUrl?: string;
+  unitPriceMinor?: number;
+  pickupInstructions?: string;
+  simulation?: SimulationConsent;
 }
 async function dbOpen() {
   const file = process.env.ORDERS_DATABASE_PATH
@@ -45,6 +58,7 @@ async function dbOpen() {
   await db.exec(
     `PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,key TEXT NOT NULL,hash TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,data TEXT NOT NULL,UNIQUE(merchant_id,key)); CREATE INDEX IF NOT EXISTS order_tenant_date ON orders(merchant_id,created_at); CREATE TABLE IF NOT EXISTS submission_limits(merchant_id TEXT NOT NULL,phone_hash TEXT NOT NULL,bucket INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(merchant_id,phone_hash,bucket));`,
   );
+  await ensureSimulationTables(db);
   return db;
 }
 function decode(row: Record<string, unknown>): StoredOrder {
@@ -53,10 +67,15 @@ function decode(row: Record<string, unknown>): StoredOrder {
     status: statusSchema.parse(row.status),
   };
 }
-export async function createOrder(merchant: string, raw: unknown, key: string) {
+export async function createOrder(
+  merchant: string,
+  raw: unknown,
+  key: string,
+  productFormId?: string,
+) {
   if (!/^[a-f0-9-]{36}$/.test(key))
     throw new CheckoutError("معرف منع التكرار غير صالح.", 400);
-  const settings = await getFormSettings(merchant);
+  const settings = await getFormSettings(merchant, productFormId);
   const input = formValidationSchema(settings).parse(raw);
   const hash = createHash("sha256")
     .update(JSON.stringify(input.customer))
@@ -150,6 +169,19 @@ export async function createOrder(merchant: string, raw: unknown, key: string) {
       reservedStock,
       productName: product.name,
       variantName: variant.name,
+      simulation:
+        input.simulation && (await simulationSettings(db, merchant)).enabled
+          ? input.simulation
+          : undefined,
+      productSku: product.sku,
+      variantSku: variant.sku,
+      productImageUrl:
+        variant.imageUrl || product.imageUrl || product.images?.[0],
+      unitPriceMinor: variant.priceMinor,
+      pickupInstructions:
+        input.customer.method === "office"
+          ? settings.officePickupInstructions
+          : undefined,
     };
     await db
       .prepare("INSERT INTO orders VALUES(?,?,?,?,?,?,?)")
@@ -167,6 +199,8 @@ export async function createOrder(merchant: string, raw: unknown, key: string) {
         "INSERT INTO submission_limits VALUES(?,?,?,1) ON CONFLICT(merchant_id,phone_hash,bucket) DO UPDATE SET count=submission_limits.count+1",
       )
       .run(merchant, phoneHash, bucket);
+    if (order.simulation)
+      await recordOrderSimulation(db, merchant, order, "order_submitted");
     await db.exec("COMMIT");
     return { order, duplicate: false };
   } catch (e) {
@@ -251,6 +285,22 @@ export async function setOrderStatus(
     await db
       .prepare("UPDATE orders SET status=? WHERE merchant_id=? AND id=?")
       .run(status, merchant, id);
+    if (
+      order.simulation &&
+      (status === "confirmed" || status === "fulfilled")
+    ) {
+      const settings = await simulationSettings(db, merchant);
+      await recordOrderSimulation(
+        db,
+        merchant,
+        order,
+        status === "confirmed"
+          ? "order_confirmed"
+          : settings.purchaseOnFulfilled
+            ? "purchase"
+            : "order_delivered",
+      );
+    }
     await db.exec("COMMIT");
   } catch (e) {
     await db.exec("ROLLBACK");
@@ -276,6 +326,18 @@ export function exportOrders(orders: StoredOrder[]) {
         "الإجمالي بالدينار",
         "الحالة",
         "التاريخ",
+        "معرف المنتج",
+        "رمز المنتج SKU",
+        "المنتج",
+        "رابط الصورة",
+        "معرف الخيار",
+        "الخيار",
+        "رمز الخيار SKU",
+        "سعر الوحدة",
+        "مجموع المنتجات",
+        "التوصيل",
+        "الخصم",
+        "تعليمات الاستلام",
       ],
       ...orders.map((o) => [
         o.id,
@@ -288,9 +350,42 @@ export function exportOrders(orders: StoredOrder[]) {
         String(o.quote.methods[o.customer.method].totalMinor! / 100),
         o.status,
         o.createdAt,
+        o.customer.productId,
+        o.productSku || "",
+        o.productName,
+        o.productImageUrl || "",
+        o.customer.variantId,
+        o.variantName,
+        o.variantSku || "",
+        String((o.unitPriceMinor ?? o.quote.unitPriceMinor) / 100),
+        String(o.quote.subtotalMinor / 100),
+        String(o.quote.methods[o.customer.method].amountMinor! / 100),
+        String(o.quote.discountMinor / 100),
+        o.pickupInstructions || "",
       ]),
     ]
       .map((r) => r.map(cell).join(","))
       .join("\r\n")
   );
+}
+
+async function recordOrderSimulation(
+  db: DatabaseSync,
+  merchant: string,
+  order: StoredOrder,
+  eventType:
+    "order_submitted" | "order_confirmed" | "order_delivered" | "purchase",
+) {
+  await recordSimulation(db, merchant, {
+    eventId: simulationEventId(merchant, order.id, eventType),
+    eventType,
+    source: "order",
+    orderId: order.id,
+    productId: order.customer.productId,
+    sku: order.variantSku || order.productSku,
+    variantId: order.customer.variantId,
+    quantity: order.customer.quantity,
+    valueMinor: order.quote.methods[order.customer.method].totalMinor!,
+    attributionKeys: Object.keys(order.simulation?.attribution ?? {}),
+  });
 }

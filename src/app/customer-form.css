@@ -314,3 +314,77 @@
 .lead-form .lead-submit > svg {
   flex-shrink: 0;
 }
+.product-gallery {
+  margin-bottom: 16px;
+}
+.product-gallery-main {
+  height: 200px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e4e7ef;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fafbfe;
+}
+.product-gallery-main .product-thumbnail {
+  object-fit: contain;
+  border: 0;
+}
+.product-gallery-thumbnails {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 3px 3px;
+}
+.lead-form .product-gallery-thumbnails button {
+  padding: 2px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.lead-form .product-gallery-thumbnails button[aria-pressed="true"] {
+  border-color: var(--lead-focus);
+}
+.lead-product-description {
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.lead-product-description summary {
+  cursor: pointer;
+}
+.lead-compare {
+  margin-bottom: 12px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+.lead-availability {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.lead-availability:empty {
+  display: none;
+}
+.lead-pickup {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.lead-form .lead-simulation-consent {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.8;
+  font-weight: 400;
+}
+.lead-form .lead-simulation-consent input {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin-top: 4px;
+  flex-shrink: 0;
+}

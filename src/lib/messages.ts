@@ -1,4 +1,194 @@
 export const messages: Record<string, { en: string; fr: string }> = {
+  "زيارة الصفحة": { en: "Page view", fr: "Visite de page" },
+  "عرض المنتج": { en: "Product view", fr: "Vue du produit" },
+  "بدء الطلب": { en: "Checkout started", fr: "Début de commande" },
+  "طلب COD محفوظ — Lead": {
+    en: "Saved COD order — Lead",
+    fr: "Commande COD enregistrée — Lead",
+  },
+  "طلب مؤكد": { en: "Order confirmed", fr: "Commande confirmée" },
+  "طلب مسلّم": { en: "Order delivered", fr: "Commande livrée" },
+  "شراء حسب التعريف التجريبي": {
+    en: "Purchase under the simulation definition",
+    fr: "Achat selon la définition de simulation",
+  },
+  "تعذر تحميل سجل المحاكاة.": {
+    en: "Could not load simulation logs.",
+    fr: "Impossible de charger le journal de simulation.",
+  },
+  "تم تحديث المحاكاة المحلية.": {
+    en: "Local simulation updated.",
+    fr: "Simulation locale mise à jour.",
+  },
+  "تعذر تنفيذ اختبار المحاكاة.": {
+    en: "Could not run the simulation test.",
+    fr: "Impossible d’exécuter le test de simulation.",
+  },
+  "محاكاة الإعلانات والتحويلات": {
+    en: "Advertising and conversion simulation",
+    fr: "Simulation des publicités et conversions",
+  },
+  "محاكاة محلية فقط": {
+    en: "Local simulation only",
+    fr: "Simulation locale uniquement",
+  },
+  "تحديث السجل": { en: "Refresh logs", fr: "Actualiser le journal" },
+  "لا توجد اتصالات بمنصات الإعلانات أو مفاتيح مطلوبة. الحمولات والسجلات هنا تجريبية وليست تأكيد تسليم من المزوّد.":
+    {
+      en: "No advertising platforms are contacted and no keys are required. Payloads and logs are simulated, without provider delivery confirmation.",
+      fr: "Aucune plateforme publicitaire n’est contactée et aucune clé n’est nécessaire. Les charges utiles et journaux sont simulés, sans confirmation du fournisseur.",
+    },
+  "جارٍ تحميل سجل المحاكاة…": {
+    en: "Loading simulation logs…",
+    fr: "Chargement du journal de simulation…",
+  },
+  "تفعيل المحاكاة المحلية": {
+    en: "Enable local simulation",
+    fr: "Activer la simulation locale",
+  },
+  "محاكاة Purchase عند نقل الطلب إلى تم التسليم": {
+    en: "Simulate Purchase when an order is marked delivered",
+    fr: "Simuler Purchase lorsqu’une commande est marquée livrée",
+  },
+  "الافتراضي: حفظ COD يولد Lead، والتأكيد والتسليم حدثان منفصلان. تفعيل Purchase هنا تعريف تجريبي للتسليم، وليس إثبات تحصيل أموال.":
+    {
+      en: "Default: saving COD creates a Lead; confirmation and delivery are separate events. Purchase mapping here is a simulated delivery definition, without proof of payment.",
+      fr: "Par défaut, l’enregistrement COD génère un Lead ; confirmation et livraison sont distinctes. Le mappage Purchase est une définition de livraison simulée, sans preuve d’encaissement.",
+    },
+  "حفظ إعدادات المحاكاة": {
+    en: "Save simulation settings",
+    fr: "Enregistrer les paramètres de simulation",
+  },
+  "اختبار الحمولة ومنع التكرار": {
+    en: "Test payloads and deduplication",
+    fr: "Tester les charges utiles et la déduplication",
+  },
+  "هذا الاختبار لا ينشئ طلبًا. قناتا Meta وTikTok تشتركان في event_id واحد، وتحسب المحاكاة حدثًا واحدًا لكل منصة.":
+    {
+      en: "This test creates no order. Browser and server channels share an event_id, and the simulation counts one event per platform.",
+      fr: "Ce test ne crée aucune commande. Les canaux navigateur et serveur partagent un event_id et la simulation compte un événement par plateforme.",
+    },
+  "نوع الحدث": { en: "Event type", fr: "Type d’événement" },
+  "محاكاة فشل المحاولة الأولى": {
+    en: "Simulate first-attempt failure",
+    fr: "Simuler l’échec de la première tentative",
+  },
+  "إنشاء حدث تجريبي": {
+    en: "Create test event",
+    fr: "Créer un événement de test",
+  },
+  "سجل الأحداث التجريبية": {
+    en: "Simulated event logs",
+    fr: "Journal des événements simulés",
+  },
+  المنصة: { en: "Platform", fr: "Plateforme" },
+  "يعرض السجل آخر 200 صف. لا يحتوي على أسماء العملاء أو أرقامهم أو عناوينهم؛ تظهر أسماء معرّفات النقر فقط دون قيمها.":
+    {
+      en: "Shows the latest 200 rows. Logs contain no customer names, phone numbers or addresses; only click identifier names appear, without their values.",
+      fr: "Affiche les 200 dernières lignes. Aucun nom, téléphone ni adresse client ; seuls les noms des identifiants de clic apparaissent, sans leurs valeurs.",
+    },
+  الحدث: { en: "Event", fr: "Événement" },
+  القناة: { en: "Channel", fr: "Canal" },
+  المحاولات: { en: "Attempts", fr: "Tentatives" },
+  "رقم الطلب": { en: "Order reference", fr: "Référence de commande" },
+  الوقت: { en: "Time", fr: "Heure" },
+  المتصفح: { en: "Browser", fr: "Navigateur" },
+  الخادم: { en: "Server", fr: "Serveur" },
+  "فشل تجريبي": { en: "Simulated failure", fr: "Échec simulé" },
+  "مكرر — لم يُحسب ثانية": {
+    en: "Duplicate — not counted again",
+    fr: "Doublon — non recompté",
+  },
+  "تمت المحاكاة": { en: "Simulated", fr: "Simulé" },
+  "عرض الحمولة": { en: "View payload", fr: "Voir la charge utile" },
+  "إعادة محاولة نفس الحدث": {
+    en: "Retry same event",
+    fr: "Réessayer le même événement",
+  },
+  "لا توجد أحداث محاكاة بعد. فعّلها واختبر حدثًا أو أرسل طلبًا بعد الموافقة.": {
+    en: "No simulated events yet. Enable simulation and test an event or submit an order after consent.",
+    fr: "Aucun événement simulé. Activez la simulation et testez un événement ou envoyez une commande après consentement.",
+  },
+  "حمولة محاكاة — لم تُرسل خارجيًا": {
+    en: "Simulated payload — not sent externally",
+    fr: "Charge utile simulée — aucun envoi externe",
+  },
+  "هذه معاينة محلية. providerConfirmed=false دائمًا.": {
+    en: "Local preview. providerConfirmed is always false.",
+    fr: "Aperçu local. providerConfirmed reste toujours false.",
+  },
+  "تعليمات نقطة الاستلام (اختياري)": {
+    en: "Pickup instructions (optional)",
+    fr: "Instructions de retrait (facultatif)",
+  },
+  "السعر السابق:": { en: "Previous price:", fr: "Ancien prix :" },
+  "نفد هذا الخيار من المخزون.": {
+    en: "This variant is out of stock.",
+    fr: "Cette variante est en rupture de stock.",
+  },
+  "متوفر للطلب": { en: "Available to order", fr: "Disponible à la commande" },
+  "سيؤكد المتجر نقطة الاستلام معك.": {
+    en: "The store will confirm the pickup location with you.",
+    fr: "La boutique confirmera le point de retrait avec vous.",
+  },
+  "أوافق على محاكاة أحداث الزيارة والطلب محليًا، دون إرسال بيانات إلى منصات الإعلانات.":
+    {
+      en: "I agree to locally simulate visit and order events without sending data to advertising platforms.",
+      fr: "J’accepte la simulation locale des visites et commandes, sans envoi aux plateformes publicitaires.",
+    },
+  "سعر الوحدة": { en: "Unit price", fr: "Prix unitaire" },
+  "تعليمات الاستلام": {
+    en: "Pickup instructions",
+    fr: "Instructions de retrait",
+  },
+  "فتح نموذج المنتج": {
+    en: "Open product form",
+    fr: "Ouvrir le formulaire produit",
+  },
+  "نسخ رابط المنتج": { en: "Copy product link", fr: "Copier le lien produit" },
+  "تم نسخ رابط نموذج المنتج.": {
+    en: "Product form link copied.",
+    fr: "Lien du formulaire produit copié.",
+  },
+  "تعذر نسخ الرابط. افتح النموذج وانسخ العنوان.": {
+    en: "Could not copy the link. Open the form and copy its address.",
+    fr: "Impossible de copier le lien. Ouvrez le formulaire et copiez son adresse.",
+  },
+  "نسخ الرابط": { en: "Copy link", fr: "Copier le lien" },
+  "عرض الصورة": { en: "Show image", fr: "Afficher l’image" },
+  "الإعلانات والتحويلات": {
+    en: "Advertising & conversions",
+    fr: "Publicités et conversions",
+  },
+  "اختبر أحداث الإعلان محليًا وراجع الحمولات ومنع التكرار دون إرسال خارجي.": {
+    en: "Test advertising events locally and inspect payloads and deduplication without external delivery.",
+    fr: "Testez les événements localement et vérifiez les charges utiles et doublons sans envoi externe.",
+  },
+  "تغيرت إعدادات المحاكاة. حدّث الصفحة.": {
+    en: "Simulation settings changed. Reload the page.",
+    fr: "Les paramètres de simulation ont changé. Actualisez la page.",
+  },
+  "فعّل المحاكاة المحلية أولًا.": {
+    en: "Enable local simulation first.",
+    fr: "Activez d’abord la simulation locale.",
+  },
+  "حدث المحاكاة غير موجود.": {
+    en: "Simulation event not found.",
+    fr: "Événement de simulation introuvable.",
+  },
+  "أضف منتجًا نشطًا لاختبار المحاكاة.": {
+    en: "Add an active product to test simulation.",
+    fr: "Ajoutez un produit actif pour tester la simulation.",
+  },
+  "تعذر تسجيل حدث المحاكاة.": {
+    en: "Could not record the simulated event.",
+    fr: "Impossible d’enregistrer l’événement simulé.",
+  },
+  "معرف المنتج غير صالح.": {
+    en: "Invalid product ID.",
+    fr: "Identifiant produit invalide.",
+  },
+
   "اختيار الصور": { en: "Choose images", fr: "Choisir des images" },
 
   "استورد رابط الصورة أولًا للتحقق منه وحفظ نسخة محلية.": {

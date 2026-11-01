@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Wallet,
 } from "lucide-react";
+import { ProductImage } from "../products/image";
 import { useLanguage } from "@/components/language-provider";
 import type { StoredOrder, OrderStatus } from "@/modules/orders/repository";
 import { Button } from "../ui/button";
@@ -288,7 +289,16 @@ export function OrdersDashboard({
                             </span>
                           </td>
                           <td>
-                            <b>{o.productName}</b>
+                            <div className="product-table-name">
+                              {o.productImageUrl && (
+                                <ProductImage
+                                  src={o.productImageUrl}
+                                  name={o.productName}
+                                  size={40}
+                                />
+                              )}
+                              <b>{o.productName}</b>
+                            </div>
                             <span>
                               {o.variantName} · {t("الكمية")}:{" "}
                               {o.customer.quantity}
@@ -360,11 +370,44 @@ export function OrdersDashboard({
               onClose={() => setDetails(null)}
             >
               <div className="ds-dialog-body">
+                {selected.productImageUrl && (
+                  <div className="mb-4 flex items-center gap-3">
+                    <ProductImage
+                      src={selected.productImageUrl}
+                      name={selected.productName}
+                      size={80}
+                    />
+                    <span>
+                      {selected.productName}
+                      <br />
+                      {selected.variantName}
+                    </span>
+                  </div>
+                )}
                 <p className="data-detail-id">
                   <bdi>{selected.id}</bdi>
                 </p>
                 <dl className="grid gap-x-6 gap-y-4 text-xs sm:grid-cols-2 lg:grid-cols-3">
                   {[
+                    {
+                      label: "رمز المنتج SKU",
+                      value: selected.productSku || "—",
+                    },
+                    {
+                      label: "رمز الخيار SKU",
+                      value: selected.variantSku || "—",
+                    },
+                    {
+                      label: "سعر الوحدة",
+                      value: formatDzd(
+                        (selected.unitPriceMinor ??
+                          selected.quote.unitPriceMinor) / 100,
+                      ),
+                    },
+                    {
+                      label: "تعليمات الاستلام",
+                      value: selected.pickupInstructions || "—",
+                    },
                     { label: "الهاتف", value: selected.customer.phone || "—" },
                     {
                       label: "طريقة التوصيل",

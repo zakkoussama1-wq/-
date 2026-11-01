@@ -1,6 +1,8 @@
 "use client";
 import { useLanguage } from "@/components/language-provider";
 import { storefrontUrl } from "@/modules/checkout/storefront-url";
+import { useSimulation } from "./checkout/use-simulation";
+import { ProductGallery } from "./products/gallery";
 import { ProductImage } from "./products/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -39,10 +41,12 @@ export function CustomerPreview({
   refreshKey = 0,
   settings,
   previewOnly = false,
+  productId,
 }: {
   refreshKey?: number;
   settings?: FormSettings;
   previewOnly?: boolean;
+  productId?: string;
 }) {
   const { t } = useLanguage();
   const updates = useCheckoutUpdates();
@@ -119,6 +123,7 @@ export function CustomerPreview({
           refreshKey={refreshKey}
           design={design}
           previewOnly={previewOnly}
+          standalone={productId !== undefined}
         />
       )}
     </div>
@@ -130,12 +135,14 @@ function CheckoutForm({
   refreshKey,
   design,
   previewOnly,
+  standalone,
 }: {
   catalog: CheckoutCatalog;
   catalogBlocked: boolean;
   refreshKey: number;
   design: FormSettings;
   previewOnly: boolean;
+  standalone: boolean;
 }) {
   const { t } = useLanguage();
   const [deliveryChosen, setDeliveryChosen] = useState(false);
@@ -168,7 +175,12 @@ function CheckoutForm({
     resolver: zodResolver(checkoutSchemaForSettings(design.contact)),
     defaultValues: {
       productId: first?.id ?? "",
-      variantId: first?.variants[0]?.id ?? "",
+      variantId:
+        (standalone
+          ? first?.variants.find((v) => v.stock === null || v.stock > 0)?.id
+          : undefined) ??
+        first?.variants[0]?.id ??
+        "",
       quantity: 1,
       name: "",
       phone: "",
@@ -229,6 +241,12 @@ function CheckoutForm({
   const values = useWatch({ control }) as CheckoutValues;
   const product = catalog.products.find((p) => p.id === values.productId);
   const variant = product?.variants.find((v) => v.id === values.variantId);
+  const simulation = useSimulation(
+    product?.id,
+    variant?.id,
+    values.quantity,
+    previewOnly,
+  );
   const parsed = pricingInputSchema.safeParse({
     productId: values.productId,
     variantId: values.variantId,
@@ -275,7 +293,8 @@ function CheckoutForm({
     pricing.ready &&
     !!selected?.available &&
     !catalogBlocked &&
-    !!variant;
+    !!variant &&
+    (variant.stock === null || variant.stock >= values.quantity);
   useEffect(() => {
     if (!success) return;
     receiptPanel.current?.scrollIntoView({
@@ -306,6 +325,9 @@ function CheckoutForm({
         },
         body: JSON.stringify({
           customer,
+          ...(simulation.metadata()
+            ? { simulation: simulation.metadata() }
+            : {}),
           quoteToken: pricing.quote.quoteToken,
         }),
       });
@@ -348,6 +370,22 @@ function CheckoutForm({
       </p>
     );
   const elements = design.elements;
+  const image = variant.imageUrl || product.imageUrl || product.images?.[0];
+  const galleryImages = [
+    ...new Set(
+      [
+        image,
+        product.imageUrl,
+        ...(product.images ?? []),
+        ...product.variants.map((v) => v.imageUrl),
+      ].filter((s): s is string => !!s),
+    ),
+  ];
+  const gallery =
+    elements.productImage &&
+    galleryImages.length > 0 &&
+    (standalone || galleryImages.length > 1);
+
   const contactField = (key: "name" | "phone" | "address") => {
     if (
       design.contact[key] === "hidden" ||
@@ -425,13 +463,22 @@ function CheckoutForm({
           {t(design.badgeText)}
         </div>
       )}
+      {gallery && (
+        <ProductGallery
+          key={`${product.id}:${variant.id}:${image ?? ""}`}
+          images={galleryImages}
+          initial={image!}
+          name={product.name}
+        />
+      )}
       {(elements.productImage ||
         elements.productTitle ||
         elements.productPrice) && (
         <div className="lead-product">
           {elements.productImage &&
-            (product.imageUrl ? (
-              <ProductImage src={product.imageUrl} name={t(product.name)} />
+            !gallery &&
+            (image ? (
+              <ProductImage src={image} name={t(product.name)} />
             ) : product.demo ? (
               <div
                 role="img"
@@ -483,6 +530,34 @@ function CheckoutForm({
           </div>
         </div>
       )}
+      {product.description &&
+        (product.description.length <= 180 ? (
+          <p className="lead-product-description" dir="auto">
+            {product.description}
+          </p>
+        ) : (
+          <details className="lead-product-description">
+            <summary dir="auto">{product.description.slice(0, 180)}…</summary>
+            <p dir="auto">{product.description}</p>
+          </details>
+        ))}
+      {elements.productPrice &&
+        product.compareAtMinor !== undefined &&
+        product.compareAtMinor > shownUnitMinor! && (
+          <p className="lead-compare">
+            {t("السعر السابق:")}{" "}
+            <del>{formatDzd(product.compareAtMinor / 100)}</del>
+          </p>
+        )}
+      <p className="lead-availability" role="status">
+        {variant.stock === 0
+          ? t("نفد هذا الخيار من المخزون.")
+          : variant.stock !== null && variant.stock < values.quantity
+            ? t("الكمية المطلوبة غير متوفرة في المخزون.")
+            : standalone
+              ? t("متوفر للطلب")
+              : ""}
+      </p>
       {elements.title && <h3 className="lead-heading">{t(design.title)}</h3>}
       {elements.subtitle && (
         <p className="lead-description">{t(design.subtitle)}</p>
@@ -494,6 +569,7 @@ function CheckoutForm({
             event.preventDefault();
             return;
           }
+          simulation.checkoutStarted();
           void handleSubmit(confirm)(event);
         }}
         className="lead-checkout"
@@ -655,6 +731,12 @@ function CheckoutForm({
                     );
                   })}
               </div>
+              {deliveryChosen && values.method === "office" && (
+                <p className="lead-pickup" role="note">
+                  {design.officePickupInstructions ||
+                    t("سيؤكد المتجر نقطة الاستلام معك.")}
+                </p>
+              )}
               {!deliveryChosen && values.communeId && (
                 <p className="mt-2 text-xs text-slate-500">
                   {t("اختر طريقة التوصيل المناسبة لك.")}
@@ -702,7 +784,9 @@ function CheckoutForm({
                 <button
                   type="button"
                   aria-label={t("زيادة الكمية")}
-                  disabled={values.quantity >= 10}
+                  disabled={
+                    values.quantity >= Math.min(10, variant.stock ?? 10)
+                  }
                   onClick={() => setValue("quantity", values.quantity + 1)}
                 >
                   <Plus size={14} />
@@ -782,6 +866,18 @@ function CheckoutForm({
             <span> · {formatDzd(total / 100)}</span>
           )}
         </Button>
+        {simulation.enabled && (
+          <label className="lead-simulation-consent">
+            <input
+              type="checkbox"
+              checked={simulation.consent}
+              onChange={(e) => simulation.setConsent(e.target.checked)}
+            />
+            {t(
+              "أوافق على محاكاة أحداث الزيارة والطلب محليًا، دون إرسال بيانات إلى منصات الإعلانات.",
+            )}
+          </label>
+        )}
         {submitError && (
           <p role="alert" className="lead-notice lead-notice-error">
             {t(submitError)}

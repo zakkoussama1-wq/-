@@ -1,10 +1,10 @@
+import { localCommerceAdapter } from "@/modules/commerce/adapter";
+import { requestedProduct } from "@/modules/forms/product-form";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { localMerchantId } from "@/modules/merchants/local-context";
 import {
-  createOrder,
   exportOrders,
-  listOrders,
   setOrderStatus,
   statusSchema,
 } from "@/modules/orders/repository";
@@ -12,7 +12,9 @@ import { CheckoutError } from "@/modules/checkout/service";
 export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
-    const orders = await listOrders(await localMerchantId(request));
+    const orders = await localCommerceAdapter.orders(
+      await localMerchantId(request),
+    );
     return new URL(request.url).searchParams.get("format") === "csv"
       ? new Response(exportOrders(orders), {
           headers: {
@@ -70,10 +72,11 @@ export async function POST(request: Request) {
       await setOrderStatus(merchant, data.id, data.status);
       return NextResponse.json({ saved: true });
     }
-    const result = await createOrder(
+    const result = await localCommerceAdapter.submit(
       merchant,
       raw,
       request.headers.get("idempotency-key") ?? "",
+      requestedProduct(request),
     );
     return NextResponse.json(
       {

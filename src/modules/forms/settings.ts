@@ -86,6 +86,7 @@ export const formSettingsSchema = z
       .max(250)
       .default("بياناتك آمنة وتُستخدم لتوصيل طلبك فقط."),
     badgeText: z.string().max(100).default("الدفع عند الاستلام"),
+    officePickupInstructions: z.string().trim().max(300).optional(),
     compact: z.boolean().default(true),
     columns: z.enum(["one", "two"]).default("two"),
     elements: elementSchema.default(elementDefaults),

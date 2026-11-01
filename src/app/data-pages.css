@@ -266,3 +266,36 @@
     font-size: 16px;
   }
 }
+
+.simulation-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.simulation-check input {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+}
+.simulation-payload {
+  overflow-x: auto;
+  max-width: 100%;
+  font-size: 12px;
+  padding: 16px;
+  border: 1px solid #e4e7ef;
+  border-radius: 8px;
+  background: #f8f9fc;
+}
+.simulation-page select {
+  width: auto;
+  max-width: 100%;
+}
+
+.simulation-page .settings-actions > label {
+  min-width: 0;
+  max-width: 100%;
+}
+.simulation-check input {
+  flex-shrink: 0;
+}

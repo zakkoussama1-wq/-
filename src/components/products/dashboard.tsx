@@ -12,6 +12,7 @@ import { Search, ArrowDownUp, Plus, Pencil } from "lucide-react";
 import { Dialog } from "../ui/dialog";
 import { Surface, Skeleton, Toast } from "../ui/surface";
 import { TablePagination } from "../ui/table-pagination";
+import { productFormLink } from "@/modules/forms/product-form";
 import { MediaEditor, productImages } from "./media-editor";
 import { ProductImage } from "./image";
 import { formatDzd } from "@/lib/i18n";
@@ -29,6 +30,28 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
   const [ascending, setAscending] = useState(true);
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
+  const [store, setStore] = useState<string | null>(null);
+  const [linksReady, setLinksReady] = useState(false);
+  useEffect(() => {
+    const abort = new AbortController();
+    fetch("/api/auth", { signal: abort.signal })
+      .then(async (r) => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then((data) => {
+        if (data.localDemo || typeof data.merchantId === "string") {
+          setStore(
+            /^[a-f0-9-]{36}$/.test(data.merchantId ?? "")
+              ? data.merchantId
+              : null,
+          );
+          setLinksReady(true);
+        }
+      })
+      .catch(() => {});
+    return () => abort.abort();
+  }, []);
   const saving = useRef(false);
   const [uploading, setUploading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -313,6 +336,46 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
                           )}
                         </td>
                         <td>
+                          {linksReady && p.active ? (
+                            <>
+                              <Button asChild size="sm" variant="outline">
+                                <a
+                                  href={productFormLink(p.id, store)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`${t("فتح نموذج المنتج")} ${p.name}`}
+                                >
+                                  {t("فتح نموذج المنتج")}
+                                </a>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                aria-label={`${t("نسخ رابط المنتج")} ${p.name}`}
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(
+                                      new URL(
+                                        productFormLink(p.id, store),
+                                        window.location.origin,
+                                      ).href,
+                                    );
+                                    setNotice("تم نسخ رابط نموذج المنتج.");
+                                  } catch {
+                                    setError(
+                                      "تعذر نسخ الرابط. افتح النموذج وانسخ العنوان.",
+                                    );
+                                  }
+                                }}
+                              >
+                                {t("نسخ الرابط")}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button size="sm" variant="outline" disabled>
+                              {t("فتح نموذج المنتج")}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"

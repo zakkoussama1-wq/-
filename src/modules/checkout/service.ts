@@ -112,8 +112,12 @@ export async function priceCheckoutSnapshot(
     demo: product.demo,
   };
 }
-export async function validateCheckout(merchant: string, raw: unknown) {
-  const settings = await getFormSettings(merchant);
+export async function validateCheckout(
+  merchant: string,
+  raw: unknown,
+  productFormId?: string,
+) {
+  const settings = await getFormSettings(merchant, productFormId);
   const { customer, quoteToken } = formValidationSchema(settings).parse(raw);
   const { productId, variantId, quantity, mode, wilayaCode, communeId } =
     customer;

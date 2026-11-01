@@ -9,6 +9,7 @@ export async function proxy(request: NextRequest) {
   const p = request.nextUrl.pathname;
   const admin =
     p.startsWith("/api/products") ||
+    p.startsWith("/api/advertising") ||
     (p.startsWith("/api/integrations/") && !p.endsWith("/callback")) ||
     (p === "/api/form-config" && request.method !== "GET") ||
     p === "/" ||
@@ -34,6 +35,7 @@ export const config = {
     "/api/orders",
     "/api/form-config",
     "/api/products/:path*",
+    "/api/advertising/:path*",
     "/api/integrations/:path*",
   ],
 };

@@ -18,6 +18,7 @@ import {
   Truck,
   X,
 } from "lucide-react";
+import { AdvertisingDashboard } from "./advertising/dashboard";
 import { LanguageSwitcher, useLanguage } from "./language-provider";
 import { notifyCheckoutChanged } from "./checkout/live-updates";
 import { ProductsDashboard } from "./products/dashboard";
@@ -60,6 +61,12 @@ const sections = [
     title: "التحليلات",
     icon: BarChart3,
     description: "أرقام واضحة تساعدك على متابعة نشاط متجرك.",
+  },
+  {
+    title: "الإعلانات والتحويلات",
+    icon: BarChart3,
+    description:
+      "اختبر أحداث الإعلان محليًا وراجع الحمولات ومنع التكرار دون إرسال خارجي.",
   },
   {
     title: "التكاملات",
@@ -364,6 +371,7 @@ export function Workspace() {
           {section === "منشئ النموذج" && <FormBuilder onSaved={saved} />}
           {section === "أسعار الشحن" && <ShippingDashboard onSaved={saved} />}
           {section === "التكاملات" && <IntegrationsDashboard />}
+          {section === "الإعلانات والتحويلات" && <AdvertisingDashboard />}
           {section === "الإعدادات" && (
             <>
               <DiscountSettings onSaved={saved} />

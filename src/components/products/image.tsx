@@ -6,10 +6,12 @@ export function ProductImage({
   src,
   name,
   size = 72,
+  fluid = false,
 }: {
   src: string;
   name: string;
   size?: number;
+  fluid?: boolean;
 }) {
   const { t } = useLanguage();
   const [failed, setFailed] = useState("");
@@ -19,7 +21,7 @@ export function ProductImage({
         role="img"
         aria-label={t("تعذر عرض الصورة.")}
         className="product-image-error"
-        style={{ width: size, height: size }}
+        style={{ width: fluid ? "100%" : size, height: fluid ? "100%" : size }}
       >
         {t("تعذر عرض الصورة.")}
       </span>
@@ -34,7 +36,7 @@ export function ProductImage({
       referrerPolicy="no-referrer"
       onError={() => setFailed(src)}
       className="product-thumbnail"
-      style={{ width: size, height: size }}
+      style={{ width: fluid ? "100%" : size, height: fluid ? "100%" : size }}
     />
   );
 }
