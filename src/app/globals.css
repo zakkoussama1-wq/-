@@ -2,6 +2,7 @@
 @import "./workspace.css";
 @import "./shipping.css";
 @import "./data-pages.css";
+@import "./form-builder.css";
 :root {
   --background: #f6f8fa;
   --foreground: #162c2a;
@@ -205,149 +206,7 @@ input[type="color"] {
   text-align: center;
   color: #98a2b3;
 }
-/* Form studio and compact storefront */
-.form-studio {
-  min-width: 0;
-}
-.studio-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-  border: 1px solid #e3e6e8;
-  border-radius: 12px;
-  background: white;
-  padding: 16px 20px;
-}
-.studio-grid {
-  display: grid;
-  grid-template-columns: minmax(300px, 0.95fr) minmax(340px, 1.05fr);
-  align-items: start;
-  gap: 24px;
-}
-.studio-editor {
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid #e3e6e8;
-  border-radius: 12px;
-  background: white;
-}
-.studio-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-bottom: 1px solid #e3e6e8;
-  background: #fafbfc;
-}
-.studio-tabs button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  padding: 15px 6px;
-  border-bottom: 2px solid transparent;
-  font-size: 11px;
-  color: #667085;
-}
-.studio-tabs button[aria-selected="true"] {
-  border-bottom-color: #008060;
-  color: #006e52;
-  background: white;
-  font-weight: 700;
-}
-.studio-preview {
-  position: sticky;
-  top: 24px;
-  min-width: 0;
-  border: 1px solid #e3e6e8;
-  border-radius: 12px;
-  background: #ecf0f0;
-  padding: 20px;
-}
-.editor-heading {
-  margin-bottom: 14px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #202223;
-}
-.editor-label {
-  display: block;
-  font-size: 12px;
-  color: #475467;
-}
-.editor-label > input,
-.editor-label > select {
-  display: block;
-  margin-top: 7px;
-  font-weight: 400;
-  color: #202223;
-}
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 0;
-  margin: 0;
-  border-bottom: 1px solid #f0f2f3;
-  font-size: 12px;
-  font-weight: 500;
-  color: #475467;
-}
-.toggle-switch {
-  position: relative;
-  appearance: none;
-  width: 34px !important;
-  height: 20px !important;
-  min-height: 20px !important;
-  border: 0;
-  border-radius: 999px;
-  padding: 0 !important;
-  background: #d3d9dd;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.toggle-switch:before {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 1px 3px #0002;
-  transition: transform 0.15s;
-}
-.toggle-switch:checked {
-  background: #008060;
-}
-.toggle-switch:checked:before {
-  transform: translateX(14px);
-}
-.viewport-switch {
-  display: flex;
-  gap: 2px;
-  border: 1px solid #dfe4e6;
-  border-radius: 8px;
-  background: white;
-  padding: 3px;
-}
-.viewport-switch button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  border-radius: 5px;
-  padding: 6px 9px;
-  font-size: 11px;
-  color: #667085;
-}
-.viewport-switch button[aria-pressed="true"] {
-  background: #e6f3ed;
-  color: #006e52;
-  font-weight: 700;
-}
+/* Customer order form retains its merchant theme. */
 .lead-form {
   background: white;
   box-shadow: 0 5px 24px #182c2a08;
@@ -476,14 +335,6 @@ input[type="color"] {
     padding-inline: 16px;
   }
 }
-@media (max-width: 1199px) {
-  .studio-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .studio-preview {
-    position: static;
-  }
-}
 @media (max-width: 479px) {
   .app-toolbar {
     gap: 11px;
@@ -499,20 +350,8 @@ input[type="color"] {
   .lead-body.is-compact {
     padding: 15px;
   }
-  .studio-preview {
-    padding: 12px;
-  }
-  .studio-tabs button {
-    font-size: 10px;
-    gap: 4px;
-  }
   .lead-form .delivery-option {
     padding: 8px;
     gap: 5px;
   }
-}
-/* Preview stays read-only while showing the actual chosen button color. */
-.studio-preview .lead-submit:disabled {
-  opacity: 1;
-  cursor: default;
 }

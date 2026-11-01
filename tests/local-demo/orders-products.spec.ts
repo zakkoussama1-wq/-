@@ -1,4 +1,8 @@
 import { test, expect } from "@playwright/test";
+const captureDirectory =
+  process.env.DZ_CAPTURE_REDESIGN === "1"
+    ? "docs/screenshots"
+    : "test-results-local";
 for (const language of ["ar", "fr", "en"] as const)
   test(`${language}: product and order tables filter, sort, paginate and open accessible details`, async ({
     page,
@@ -177,11 +181,11 @@ test("a saved customer order can be confirmed and cancelled from its details and
   await expect(page.locator(".data-location")).toContainText("الجزائر");
   await expect(page.getByRole("dialog")).toContainText("الإجمالي النهائي");
   await page.screenshot({
-    path: `docs/screenshots/stage3-order-details-${isMobile ? "mobile" : "desktop"}.png`,
+    path: `${captureDirectory}/stage3-order-details-${isMobile ? "mobile" : "desktop"}.png`,
   });
   await page.keyboard.press("Escape");
   await page.screenshot({
-    path: `docs/screenshots/stage3-orders-${isMobile ? "mobile" : "desktop"}.png`,
+    path: `${captureDirectory}/stage3-orders-${isMobile ? "mobile" : "desktop"}.png`,
     fullPage: true,
   });
   if (isMobile)
@@ -191,7 +195,7 @@ test("a saved customer order can be confirmed and cancelled from its details and
   await page.getByRole("button", { name: "المنتجات", exact: true }).click();
   await expect(page.locator(".products-page tbody tr").first()).toBeVisible();
   await page.screenshot({
-    path: `docs/screenshots/stage3-products-${isMobile ? "mobile" : "desktop"}.png`,
+    path: `${captureDirectory}/stage3-products-${isMobile ? "mobile" : "desktop"}.png`,
     fullPage: true,
   });
 });

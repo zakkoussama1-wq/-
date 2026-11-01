@@ -1,4 +1,51 @@
 export const messages: Record<string, { en: string; fr: string }> = {
+  "مرّر داخل الإعدادات لعرض بقية الخيارات.": {
+    en: "Scroll within settings to see more options.",
+    fr: "Faites défiler les paramètres pour voir les autres options.",
+  },
+  "التراجع عن التعديلات": {
+    en: "Undo unsaved changes",
+    fr: "Annuler les modifications",
+  },
+  "انتقل إلى المعاينة": { en: "Go to preview", fr: "Aller à l’aperçu" },
+  "تم حفظ تصميم النموذج.": {
+    en: "Form design saved.",
+    fr: "Design du formulaire enregistré.",
+  },
+  "إعادة تحميل الإعدادات": {
+    en: "Reload settings",
+    fr: "Recharger les paramètres",
+  },
+  "جارٍ تحميل إعدادات المنشئ…": {
+    en: "Loading builder settings…",
+    fr: "Chargement des paramètres de l’éditeur…",
+  },
+  "إعادة تحميل القوائم": {
+    en: "Reload region lists",
+    fr: "Recharger les listes des zones",
+  },
+  "اكتب النصوص واختر المنتج المعروض.": {
+    en: "Edit text and choose the featured product.",
+    fr: "Modifiez les textes et choisissez le produit affiché.",
+  },
+  "اختر الأجزاء الظاهرة ورتّب حقول العميل.": {
+    en: "Choose visible sections and arrange customer fields.",
+    fr: "Choisissez les sections visibles et l’ordre des champs client.",
+  },
+  "اضبط ألوان متجرك وكثافة النموذج.": {
+    en: "Set your store colors and form density.",
+    fr: "Réglez les couleurs de votre boutique et la densité du formulaire.",
+  },
+  "حدد طرق التوصيل والمنطقة المستخدمة للتسعير.": {
+    en: "Choose delivery methods and the region used for pricing.",
+    fr: "Choisissez les modes de livraison et la zone utilisée pour les tarifs.",
+  },
+  "سيُستبدل التصميم الحالي بالقيم الافتراضية في المحرر فقط. لن يتغير النموذج المحفوظ حتى تضغط حفظ النموذج.":
+    {
+      en: "This replaces the draft with default settings in the editor only. Your saved form changes only when you save the form.",
+      fr: "Les valeurs par défaut remplaceront le brouillon dans l’éditeur uniquement. Le formulaire enregistré ne changera qu’après enregistrement.",
+    },
+  "استعادة في المحرر": { en: "Reset draft", fr: "Réinitialiser le brouillon" },
   الخصم: { en: "Discount", fr: "Remise" },
   "تعذر تحميل أسماء المناطق.": {
     en: "Unable to load region names.",
