@@ -1,5 +1,11 @@
 import { it, expect } from "vitest";
-import { mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  rmSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -13,8 +19,12 @@ it("backs up/restores actual SQLite contents and refuses corruption or overwrite
       "CREATE TABLE example(value TEXT);INSERT INTO example VALUES('fixture');",
     );
     await db.close();
+    mkdirSync(join(dir, "media"));
+    const image = "a".repeat(64) + ".webp";
+    writeFileSync(join(dir, "media", image), "media-fixture");
     const env = {
       ...process.env,
+      MEDIA_STORAGE_PATH: join(dir, "media"),
       AUTH_DATABASE_PATH: file,
       ORDERS_DATABASE_PATH: file,
       SHIPPING_DATABASE_PATH: file,
@@ -25,6 +35,14 @@ it("backs up/restores actual SQLite contents and refuses corruption or overwrite
       execFileSync(process.execPath, [script, ...args], { env, stdio: "pipe" });
     run("scripts/backup.mjs", [join(dir, "backup")]);
     run("scripts/restore.mjs", [join(dir, "backup"), join(dir, "restored")]);
+    expect(readFileSync(join(dir, "restored", "media", image), "utf8")).toBe(
+      "media-fixture",
+    );
+    writeFileSync(join(dir, "backup", "media", image), "corrupted");
+    expect(() =>
+      run("scripts/restore.mjs", [join(dir, "backup"), join(dir, "bad-media")]),
+    ).toThrow();
+    writeFileSync(join(dir, "backup", "media", image), "media-fixture");
     const restored = new DatabaseSync(join(dir, "restored/orders.sqlite"));
     expect(
       (await restored.prepare("SELECT value FROM example").get())?.value,

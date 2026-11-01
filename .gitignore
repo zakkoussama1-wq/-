@@ -16,3 +16,5 @@ data/*.env
 data/local-demo/
 .next-local*/
 test-results-local/
+
+data/media/

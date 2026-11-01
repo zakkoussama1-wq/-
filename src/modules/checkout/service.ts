@@ -47,7 +47,7 @@ export async function priceCheckoutSnapshot(
   assertFormPricing(settings, data);
   const product = catalog.products.find((p) => p.id === data.productId);
   const variant = product?.variants.find((v) => v.id === data.variantId);
-  if (!product || !variant || !product.active)
+  if (!product || !variant || !product.active || product.deleted)
     throw new CheckoutError("المنتج أو الخيار المحدد غير متاح.", 400);
   if (variant.stock !== null && variant.stock < data.quantity)
     throw new CheckoutError("الكمية المطلوبة غير متوفرة في المخزون.");

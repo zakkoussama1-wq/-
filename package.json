@@ -21,7 +21,9 @@
     "test:postgres": "node scripts/test-postgres.mjs",
     "db:migrate-postgres": "node scripts/migrate-postgres.mjs",
     "dev:local": "node scripts/dev-local.mjs",
-    "test:local": "playwright test --config=playwright.local.config.ts"
+    "test:local": "playwright test --config=playwright.local.config.ts",
+    "test:media-restart": "node scripts/test-media-restart.mjs",
+    "postbuild": "node scripts/check-build-data.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "7.0.0",
@@ -34,6 +36,7 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-hook-form": "7.91.0",
+    "sharp": "0.35.5",
     "tailwind-merge": "3.7.0",
     "zod": "4.6.7"
   },

@@ -8,6 +8,7 @@ import {
   type Discount,
   type CheckoutCatalog,
 } from "./schema";
+import { assertOwnedMedia } from "../media/storage";
 import { ConflictError } from "../shipping/repository";
 /** Explicit local fixture, not synchronized inventory or a live merchant product. */
 const demoProduct = {
@@ -117,6 +118,12 @@ export async function saveProduct(
   raw: unknown,
 ) {
   const product = productSchema.parse(raw);
+  await assertOwnedMedia(merchant, [
+    product.imageUrl,
+    ...(product.images ?? []),
+    ...product.variants.map((v) => v.imageUrl),
+  ]);
+  if (product.deleted) product.active = false;
   if (
     !product.id ||
     product.id.length > 100 ||
@@ -134,7 +141,33 @@ export async function saveProduct(
     const current = await readCheckoutSnapshot(db, merchant);
     if (current.revision !== revision)
       throw new ConflictError("تغير الكتالوج. أعد تحميل المنتجات.");
+    const references = (p: typeof product) =>
+      [
+        p.imageUrl,
+        ...(p.images ?? []),
+        ...p.variants.map((v) => v.imageUrl),
+      ].filter((value): value is string => !!value);
+    const legacy = new Set(
+      current.products
+        .flatMap(references)
+        .filter((value) => !value.startsWith("/media/")),
+    );
+    if (
+      references(product).some(
+        (value) => !value.startsWith("/media/") && !legacy.has(value),
+      )
+    )
+      throw new RangeError(
+        "استورد رابط الصورة أولًا للتحقق منه وحفظ نسخة محلية.",
+      );
+    if (
+      new Set([product.imageUrl, ...(product.images ?? [])].filter(Boolean))
+        .size > 12
+    )
+      throw new RangeError("يمكن إضافة 12 صورة كحد أقصى للمنتج.");
     const previous = current.products.find((p) => p.id === product.id);
+    if (previous?.deleted)
+      throw new RangeError("المنتج محذوف. أنشئ نسخة بمعرف جديد.");
     if (
       previous?.variants.some(
         (v) => !product.variants.some((n) => n.id === v.id),

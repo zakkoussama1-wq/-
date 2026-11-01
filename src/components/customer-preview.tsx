@@ -1,7 +1,7 @@
 "use client";
 import { useLanguage } from "@/components/language-provider";
 import { storefrontUrl } from "@/modules/checkout/storefront-url";
-import Image from "next/image";
+import { ProductImage } from "./products/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -431,15 +431,7 @@ function CheckoutForm({
         <div className="lead-product">
           {elements.productImage &&
             (product.imageUrl ? (
-              <Image
-                unoptimized
-                src={product.imageUrl}
-                alt={t(product.name)}
-                width={72}
-                height={72}
-                referrerPolicy="no-referrer"
-                className="h-[72px] w-[72px] shrink-0 rounded-xl object-cover"
-              />
+              <ProductImage src={product.imageUrl} name={t(product.name)} />
             ) : product.demo ? (
               <div
                 role="img"

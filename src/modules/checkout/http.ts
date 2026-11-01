@@ -35,7 +35,10 @@ export async function readCatalog(request?: Request) {
       await localMerchantId(request, true),
     );
     return NextResponse.json(
-      { ...catalog, products: catalog.products.filter((p) => p.active) },
+      {
+        ...catalog,
+        products: catalog.products.filter((p) => p.active && !p.deleted),
+      },
       {
         headers: { "Cache-Control": "no-store" },
       },

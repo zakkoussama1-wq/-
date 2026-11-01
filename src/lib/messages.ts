@@ -1,4 +1,133 @@
 export const messages: Record<string, { en: string; fr: string }> = {
+  "اختيار الصور": { en: "Choose images", fr: "Choisir des images" },
+
+  "استورد رابط الصورة أولًا للتحقق منه وحفظ نسخة محلية.": {
+    en: "Import the image URL first to validate it and save a local copy.",
+    fr: "Importez d’abord l’URL de l’image pour la vérifier et en conserver une copie locale.",
+  },
+
+  "صور المنتج": { en: "Product images", fr: "Images du produit" },
+  "PNG أو JPG أو WebP. الحد لكل صورة:": {
+    en: "PNG, JPG or WebP. Per-image limit:",
+    fr: "PNG, JPG ou WebP. Limite par image :",
+  },
+  "حتى 12 صورة.": { en: "Up to 12 images.", fr: "Jusqu’à 12 images." },
+  "الصورة الرئيسية": { en: "Main image", fr: "Image principale" },
+  "تعيين صورة رئيسية": {
+    en: "Set main image",
+    fr: "Définir l’image principale",
+  },
+  "تقديم الصورة": { en: "Move image earlier", fr: "Avancer l’image" },
+  "تأخير الصورة": { en: "Move image later", fr: "Reculer l’image" },
+  "استبدال الصورة": { en: "Replace image", fr: "Remplacer l’image" },
+  "إزالة الصورة": { en: "Remove image", fr: "Retirer l’image" },
+  "معاينة الصورة المختارة": {
+    en: "Selected image preview",
+    fr: "Aperçu de l’image sélectionnée",
+  },
+  "جارٍ رفع الصور…": {
+    en: "Uploading images…",
+    fr: "Téléversement des images…",
+  },
+  "رفع صور من الجهاز": {
+    en: "Upload images from device",
+    fr: "Téléverser des images depuis l’appareil",
+  },
+  "ملف الصورة البديلة": {
+    en: "Replacement image file",
+    fr: "Fichier image de remplacement",
+  },
+  "استيراد الصورة": { en: "Import image", fr: "Importer l’image" },
+  "نطاقات الاستيراد المعتمدة:": {
+    en: "Approved import domains:",
+    fr: "Domaines d’importation autorisés :",
+  },
+  "إزالة الصورة تفصلها عن المنتج ولا تمسح ملفها التاريخي.": {
+    en: "Removing an image detaches it from the product and keeps its historical file.",
+    fr: "Retirer une image la détache du produit et conserve son fichier historique.",
+  },
+  "يمكن إضافة 12 صورة كحد أقصى للمنتج.": {
+    en: "A product can have up to 12 images.",
+    fr: "Un produit peut contenir jusqu’à 12 images.",
+  },
+  "حجم الصورة يتجاوز الحد المسموح.": {
+    en: "The image exceeds the size limit.",
+    fr: "L’image dépasse la taille autorisée.",
+  },
+  "صيغة الصورة غير مدعومة. استخدم PNG أو JPG أو WebP.": {
+    en: "Unsupported image format. Use PNG, JPG or WebP.",
+    fr: "Format d’image non pris en charge. Utilisez PNG, JPG ou WebP.",
+  },
+  "أبعاد الصورة يجب أن تكون بين 16 و8192 بكسل، دون صور متحركة.": {
+    en: "Image dimensions must be 16–8192 pixels. Animated images are not supported.",
+    fr: "Les dimensions doivent être comprises entre 16 et 8192 pixels. Les images animées ne sont pas acceptées.",
+  },
+  "محتوى الصورة غير صالح أو أبعادها كبيرة جدًا.": {
+    en: "The image content is invalid or its dimensions are too large.",
+    fr: "Le contenu de l’image est invalide ou ses dimensions sont trop grandes.",
+  },
+  "ملف الصورة فارغ.": {
+    en: "The image file is empty.",
+    fr: "Le fichier image est vide.",
+  },
+  "أدخل رابط صورة HTTPS صالحًا.": {
+    en: "Enter a valid HTTPS image URL.",
+    fr: "Saisissez une URL d’image HTTPS valide.",
+  },
+  "مصدر الصورة غير مسموح. استخدم الرفع أو نطاقًا معتمدًا.": {
+    en: "Image source not allowed. Upload a file or use an approved domain.",
+    fr: "Source d’image non autorisée. Téléversez un fichier ou utilisez un domaine autorisé.",
+  },
+  "تعذر التحقق من نطاق الصورة العام.": {
+    en: "Could not verify the public image domain.",
+    fr: "Impossible de vérifier le domaine public de l’image.",
+  },
+  "تعذر تنزيل الصورة. استخدم ملفًا من جهازك.": {
+    en: "Could not download the image. Use a file from your device.",
+    fr: "Impossible de télécharger l’image. Utilisez un fichier de votre appareil.",
+  },
+  "تعذر حفظ الصورة. أعد المحاولة.": {
+    en: "Could not save the image. Try again.",
+    fr: "Impossible d’enregistrer l’image. Réessayez.",
+  },
+  "الصورة غير موجودة أو لا تنتمي إلى متجرك.": {
+    en: "The image is missing or does not belong to your store.",
+    fr: "L’image est introuvable ou n’appartient pas à votre boutique.",
+  },
+  "الصورة غير موجودة.": { en: "Image not found.", fr: "Image introuvable." },
+  "تعذر عرض الصورة.": { en: "Image unavailable.", fr: "Image indisponible." },
+  "رمز المنتج SKU": { en: "Product SKU", fr: "SKU du produit" },
+  "وصف المنتج": { en: "Product description", fr: "Description du produit" },
+  "سعر المقارنة بالدينار (اختياري)": {
+    en: "Compare-at price in DZD (optional)",
+    fr: "Prix de comparaison en DZD (facultatif)",
+  },
+  "رمز الخيار SKU": { en: "Variant SKU", fr: "SKU de la variante" },
+  "صورة الخيار": { en: "Variant image", fr: "Image de la variante" },
+  "نسخ المنتج": { en: "Duplicate product", fr: "Dupliquer le produit" },
+  نسخة: { en: "Copy", fr: "Copie" },
+  "حذف المنتج": { en: "Delete product", fr: "Supprimer le produit" },
+  "تأكيد حذف المنتج": {
+    en: "Confirm product deletion",
+    fr: "Confirmer la suppression du produit",
+  },
+  "هل تريد حذف هذا المنتج؟": {
+    en: "Delete this product?",
+    fr: "Supprimer ce produit ?",
+  },
+  "حذف المنتج يخفيه ويحفظ خياراته وصوره لاستمرار سجل الطلبات والمخزون.": {
+    en: "Deletion hides the product and preserves its variants and images for order and stock history.",
+    fr: "La suppression masque le produit et conserve ses variantes et images pour l’historique des commandes et du stock.",
+  },
+  "تم حذف المنتج مع الاحتفاظ بسجله وصوره.": {
+    en: "Product deleted; its history and images are preserved.",
+    fr: "Produit supprimé ; son historique et ses images sont conservés.",
+  },
+  "المنتج محذوف. أنشئ نسخة بمعرف جديد.": {
+    en: "This product was deleted. Create a copy with a new ID.",
+    fr: "Ce produit a été supprimé. Créez une copie avec un nouvel identifiant.",
+  },
+
   "تُطبق التغييرات على الطلبات الجديدة بعد الحفظ.": {
     en: "Changes apply to new orders after saving.",
     fr: "Les modifications s’appliquent aux nouvelles commandes après l’enregistrement.",

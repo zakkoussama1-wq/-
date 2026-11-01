@@ -33,7 +33,7 @@ export const config = {
     "/api/checkout/discount",
     "/api/orders",
     "/api/form-config",
-    "/api/products",
+    "/api/products/:path*",
     "/api/integrations/:path*",
   ],
 };

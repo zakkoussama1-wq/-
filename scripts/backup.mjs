@@ -5,8 +5,11 @@ import {
   readFileSync,
   writeFileSync,
   chmodSync,
+  readdirSync,
+  lstatSync,
+  copyFileSync,
 } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
 import { createHash } from "node:crypto";
 const destination = process.argv[2];
 if (!destination)
@@ -24,7 +27,12 @@ const databases = {
   checkout: process.env.CHECKOUT_DATABASE_PATH ?? "data/checkout.sqlite",
   geography: process.env.GEOGRAPHY_DATABASE_PATH ?? "data/geography.sqlite",
 };
-const manifest = { version: 1, createdAt: new Date().toISOString(), files: {} };
+const manifest = {
+  version: 1,
+  createdAt: new Date().toISOString(),
+  files: {},
+  media: {},
+};
 for (const [name, path] of Object.entries(databases)) {
   if (!existsSync(path)) continue;
   const db = new DatabaseSync(resolve(path), { readOnly: true });
@@ -48,6 +56,25 @@ for (const [name, path] of Object.entries(databases)) {
 }
 if (!Object.keys(manifest.files).length)
   throw new Error("No source databases were found.");
+const mediaDirectory = resolve(
+  process.env.MEDIA_STORAGE_PATH ||
+    join(dirname(resolve(databases.checkout)), "media"),
+);
+if (existsSync(mediaDirectory)) {
+  mkdirSync(join(target, "media"), { mode: 0o700 });
+  for (const file of readdirSync(mediaDirectory)) {
+    if (!/^[a-f0-9]{64}\.webp(?:\.json)?$/.test(file))
+      throw new Error("Unexpected media filename.");
+    const source = join(mediaDirectory, file);
+    if (!lstatSync(source).isFile() || lstatSync(source).isSymbolicLink())
+      throw new Error("Media backup requires regular files.");
+    copyFileSync(source, join(target, "media", file));
+    chmodSync(join(target, "media", file), 0o600);
+    manifest.media[file] = createHash("sha256")
+      .update(readFileSync(join(target, "media", file)))
+      .digest("hex");
+  }
+}
 writeFileSync(
   join(target, "manifest.json"),
   JSON.stringify(manifest, null, 2),

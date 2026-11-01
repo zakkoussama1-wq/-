@@ -16,21 +16,40 @@ export const discountSchema = z.discriminatedUnion("type", [
     .strict(),
 ]); // fixed in centimes, percent in basis points. Never browser-selected on checkout.
 export type Discount = z.infer<typeof discountSchema>;
+export const productImageSchema = z
+  .string()
+  .max(4096)
+  .refine((s) => {
+    if (/^\/media\/[a-f0-9]{64}\.webp$/.test(s)) return true;
+    try {
+      const url = new URL(s);
+      return url.protocol === "https:" && !url.username && !url.password;
+    } catch {
+      return false;
+    }
+  });
 export const productSchema = z.object({
   id: z.string(),
   name: z.string().trim().min(1).max(200),
   demo: z.boolean(),
   active: z.boolean().default(true),
-  imageUrl: z
-    .string()
-    .url()
-    .refine((s) => new URL(s).protocol === "https:")
+  sku: z.string().trim().max(100).optional(),
+  description: z.string().trim().max(2000).optional(),
+  deleted: z.boolean().optional(),
+  compareAtMinor: z.number().int().nonnegative().max(1000000000).optional(),
+  imageUrl: productImageSchema.optional(),
+  images: z
+    .array(productImageSchema)
+    .max(12)
+    .refine((items) => new Set(items).size === items.length)
     .optional(),
   variants: z
     .array(
       z.object({
         id: z.string(),
         name: z.string(),
+        sku: z.string().trim().max(100).optional(),
+        imageUrl: productImageSchema.optional(),
         priceMinor: z.number().int().nonnegative().max(1000000000),
         stock: z
           .number()

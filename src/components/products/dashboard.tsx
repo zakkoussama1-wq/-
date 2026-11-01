@@ -12,6 +12,8 @@ import { Search, ArrowDownUp, Plus, Pencil } from "lucide-react";
 import { Dialog } from "../ui/dialog";
 import { Surface, Skeleton, Toast } from "../ui/surface";
 import { TablePagination } from "../ui/table-pagination";
+import { MediaEditor, productImages } from "./media-editor";
+import { ProductImage } from "./image";
 import { formatDzd } from "@/lib/i18n";
 export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
   const { t, language } = useLanguage();
@@ -28,6 +30,8 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
   const saving = useRef(false);
+  const [uploading, setUploading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Revision explicitly retries the catalog request.
   useEffect(() => {
     const controller = new AbortController();
@@ -50,11 +54,19 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
     const timer = setTimeout(() => setNotice(""), 5000);
     return () => clearTimeout(timer);
   }, [notice]);
-  async function save() {
-    if (!draft || !catalog || saving.current) return;
+  async function save(removing = false) {
+    if (!draft || !catalog || saving.current || uploading) return;
     setError("");
     setNotice("");
-    const p = productSchema.safeParse(draft);
+    const p = productSchema.safeParse(
+      removing
+        ? {
+            ...catalog.products.find((p) => p.id === draft.id),
+            active: false,
+            deleted: true,
+          }
+        : draft,
+    );
     if (!p.success) {
       setError("تحقق من الاسم والأسعار والمخزون ومعرفات الخيارات.");
       return;
@@ -71,7 +83,12 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
       if (!r.ok) throw new Error(raw.error);
       setCatalog(catalogSchema.parse(raw));
       setDraft(null);
-      setNotice("تم حفظ المنتج وتحديث النموذج.");
+      setNotice(
+        removing
+          ? "تم حذف المنتج مع الاحتفاظ بسجله وصوره."
+          : "تم حفظ المنتج وتحديث النموذج.",
+      );
+      setDeleteConfirm(false);
       onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : "تعذر الحفظ.");
@@ -85,8 +102,9 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
   const visible = (catalog?.products ?? [])
     .filter(
       (p) =>
+        !p.deleted &&
         (!filter || (filter === "active" ? p.active : !p.active)) &&
-        `${p.name} ${p.id} ${p.variants.map((v) => v.name).join(" ")}`
+        `${p.name} ${p.id} ${p.sku ?? ""} ${p.variants.map((v) => `${v.name} ${v.sku ?? ""}`).join(" ")}`
           .toLocaleLowerCase()
           .includes(search.trim().toLocaleLowerCase()),
     )
@@ -180,7 +198,8 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
             <option value="inactive">{t("موقوف")}</option>
           </select>
           <span className="data-muted">
-            {t("المنتجات")}: {catalog?.products.length ?? "—"}
+            {t("المنتجات")}:{" "}
+            {catalog?.products.filter((p) => !p.deleted).length ?? "—"}
           </span>
         </div>
         {!catalog ? (
@@ -244,7 +263,23 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
                     .map((p) => (
                       <tr key={p.id} data-testid={`product-row-${p.id}`}>
                         <td>
-                          <b>{t(p.name)}</b>
+                          <div className="product-table-name">
+                            {p.imageUrl && (
+                              <ProductImage
+                                src={p.imageUrl}
+                                name={p.name}
+                                size={40}
+                              />
+                            )}
+                            <div>
+                              <b>{t(p.name)}</b>
+                              {p.sku && (
+                                <span className="data-muted">
+                                  <bdi>{p.sku}</bdi>
+                                </span>
+                              )}
+                            </div>
+                          </div>
                           <span>
                             {p.demo ? (
                               t("منتج تجريبي")
@@ -284,12 +319,38 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
                             disabled={busy}
                             aria-label={`${t("تعديل")} ${t(p.name)}`}
                             onClick={() => {
+                              setDeleteConfirm(false);
                               setDraft(structuredClone(p));
                               setError("");
                             }}
                           >
                             <Pencil size={13} />
                             {t("تعديل")}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busy}
+                            aria-label={`${t("نسخ المنتج")} ${p.name}`}
+                            onClick={() => {
+                              setDeleteConfirm(false);
+                              setError("");
+                              setDraft({
+                                ...structuredClone(p),
+                                id: crypto.randomUUID(),
+                                sku: "",
+                                name: `${p.name} (${t("نسخة")})`,
+                                demo: false,
+                                deleted: false,
+                                variants: p.variants.map((v) => ({
+                                  ...v,
+                                  id: crypto.randomUUID(),
+                                  sku: "",
+                                })),
+                              });
+                            }}
+                          >
+                            {t("نسخ المنتج")}
                           </Button>
                         </td>
                       </tr>
@@ -329,12 +390,14 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
       {draft && (
         <Dialog
           title={t("بيانات المنتج")}
-          busy={busy}
-          onClose={() => setDraft(null)}
+          busy={busy || uploading}
+          onClose={() => {
+            if (!uploading) setDraft(null);
+          }}
         >
           <div className="ds-dialog-body">
             <fieldset
-              disabled={busy}
+              disabled={busy || uploading}
               className="space-y-4 rounded-xl border border-emerald-200 p-4"
             >
               <legend>{t("بيانات المنتج")}</legend>
@@ -345,16 +408,52 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               />
-              <label htmlFor="product-image">
-                {t("رابط صورة HTTPS (اختياري)")}
+              <label htmlFor="product-sku">{t("رمز المنتج SKU")}</label>
+              <input
+                id="product-sku"
+                dir="ltr"
+                maxLength={100}
+                value={draft.sku ?? ""}
+                onChange={(e) => setDraft({ ...draft, sku: e.target.value })}
+              />
+              <label htmlFor="product-description">{t("وصف المنتج")}</label>
+              <textarea
+                id="product-description"
+                dir="auto"
+                maxLength={2000}
+                rows={3}
+                value={draft.description ?? ""}
+                onChange={(e) =>
+                  setDraft({ ...draft, description: e.target.value })
+                }
+              />
+              <label htmlFor="product-compare">
+                {t("سعر المقارنة بالدينار (اختياري)")}
               </label>
               <input
-                id="product-image"
-                type="url"
-                value={draft.imageUrl ?? ""}
-                onChange={(e) =>
-                  setDraft({ ...draft, imageUrl: e.target.value || undefined })
+                id="product-compare"
+                type="number"
+                min="0"
+                step="0.01"
+                value={
+                  draft.compareAtMinor === undefined
+                    ? ""
+                    : draft.compareAtMinor / 100
                 }
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    compareAtMinor:
+                      e.target.value === ""
+                        ? undefined
+                        : Math.round(Number(e.target.value) * 100),
+                  })
+                }
+              />
+              <MediaEditor
+                product={draft}
+                onChange={setDraft}
+                onBusy={setUploading}
               />
               <label className="flex items-center gap-2">
                 <input
@@ -387,6 +486,52 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
                         })
                       }
                     />
+                  </label>
+                  <label>
+                    {t("رمز الخيار SKU")}
+                    <input
+                      aria-label={`${t("رمز الخيار SKU")} ${i + 1}`}
+                      dir="ltr"
+                      maxLength={100}
+                      value={v.sku ?? ""}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          variants: draft.variants.map((n, k) =>
+                            k === i ? { ...n, sku: e.target.value } : n,
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    {t("صورة الخيار")}
+                    <select
+                      aria-label={`${t("صورة الخيار")} ${i + 1}`}
+                      value={v.imageUrl ?? ""}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          variants: draft.variants.map((n, k) =>
+                            k === i
+                              ? { ...n, imageUrl: e.target.value || undefined }
+                              : n,
+                          ),
+                        })
+                      }
+                    >
+                      <option value="">{t("الصورة الرئيسية")}</option>
+                      {[
+                        ...new Set([
+                          ...productImages(draft),
+                          ...(v.imageUrl ? [v.imageUrl] : []),
+                        ]),
+                      ].map((src, k) => (
+                        <option key={src} value={src}>
+                          {t("صورة المنتج")} {k + 1}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <label>
                     {t("السعر بالدينار")}
@@ -457,12 +602,51 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
               >
                 {t("إضافة خيار")}
               </Button>
-              <Button onClick={() => void save()}>
+              <Button disabled={uploading} onClick={() => void save()}>
                 {t(busy ? "جارٍ الحفظ…" : "حفظ المنتج")}
               </Button>
-              <Button variant="outline" onClick={() => setDraft(null)}>
+              <Button
+                disabled={uploading}
+                variant="outline"
+                onClick={() => setDraft(null)}
+              >
                 {t("إلغاء التعديل")}
               </Button>
+              {catalog?.products.some((p) => p.id === draft.id) && (
+                <div className="product-delete">
+                  <p>
+                    {t(
+                      "حذف المنتج يخفيه ويحفظ خياراته وصوره لاستمرار سجل الطلبات والمخزون.",
+                    )}
+                  </p>
+                  {deleteConfirm ? (
+                    <>
+                      <p>{t("هل تريد حذف هذا المنتج؟")}</p>
+                      <Button
+                        disabled={uploading}
+                        variant="outline"
+                        onClick={() => void save(true)}
+                      >
+                        {t("تأكيد حذف المنتج")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setDeleteConfirm(false)}
+                      >
+                        {t("إلغاء")}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      disabled={uploading}
+                      variant="outline"
+                      onClick={() => setDeleteConfirm(true)}
+                    >
+                      {t("حذف المنتج")}
+                    </Button>
+                  )}
+                </div>
+              )}
             </fieldset>
             {error && (
               <p role="alert" className="data-error">

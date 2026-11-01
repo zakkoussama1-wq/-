@@ -38,10 +38,27 @@ for (const [file, hash] of Object.entries(manifest.files)) {
     db.close();
   }
 }
+for (const [file, hash] of Object.entries(manifest.media ?? {})) {
+  if (!/^[a-f0-9]{64}\.webp(?:\.json)?$/.test(file))
+    throw new Error("Unexpected media filename.");
+  if (
+    createHash("sha256")
+      .update(readFileSync(join(source, "media", file)))
+      .digest("hex") !== hash
+  )
+    throw new Error("Media checksum mismatch.");
+}
 mkdirSync(target, { recursive: true, mode: 0o700 });
 for (const file of Object.keys(manifest.files)) {
   copyFileSync(join(source, file), join(target, file));
   chmodSync(join(target, file), 0o600);
+}
+if (Object.keys(manifest.media ?? {}).length) {
+  mkdirSync(join(target, "media"), { mode: 0o700 });
+  for (const file of Object.keys(manifest.media)) {
+    copyFileSync(join(source, "media", file), join(target, "media", file));
+    chmodSync(join(target, "media", file), 0o600);
+  }
 }
 console.log(
   "Restore verified into a NEW directory. Configure database paths before starting the app. Existing data was not overwritten.",

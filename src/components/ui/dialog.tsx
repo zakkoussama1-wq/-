@@ -36,6 +36,8 @@ export function Dialog({
       aria-labelledby={id}
       aria-busy={busy}
       onCancel={(event) => {
+        // File picker cancellation bubbles; only the dialog’s own Escape event closes it.
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         if (!busy) onClose();
       }}
