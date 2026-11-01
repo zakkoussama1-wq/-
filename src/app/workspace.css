@@ -561,3 +561,53 @@
   padding: 4px 8px;
   font-size: 12px;
 }
+
+/* Native dialogs provide focus containment and Escape handling. */
+.ds-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: 12px;
+  color: var(--ds-ink);
+  background: white;
+  box-shadow: 0 20px 80px #18274430;
+}
+.ds-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.ds-dialog::backdrop {
+  background: #18274466;
+  backdrop-filter: blur(2px);
+}
+.ds-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--ds-border);
+}
+.ds-dialog-header h2 {
+  font-size: 16px;
+  font-weight: 650;
+}
+.merchant-app .ds-dialog-header button {
+  padding: 6px;
+  border-radius: 6px;
+}
+.ds-dialog-body {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 24px;
+}
+.ds-dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--ds-border);
+}

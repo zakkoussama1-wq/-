@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./workspace.css";
+@import "./shipping.css";
 :root {
   --background: #f6f8fa;
   --foreground: #162c2a;

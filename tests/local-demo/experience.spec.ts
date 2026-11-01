@@ -110,11 +110,23 @@ for (const language of ["ar", "fr", "en"] as const)
     if (isMobile)
       await admin.getByRole("button", { name: w.menu, exact: true }).click();
     await admin.getByRole("button", { name: w.nav, exact: true }).click();
+    await admin.locator("#shipping-page-size").selectOption("100");
     await expect(admin.getByTestId("shipping-row-16")).toBeVisible();
     await expect(admin.locator('[data-testid^="shipping-row-"]')).toHaveCount(
       58,
     );
     const homePrice = language === "ar" ? 611 : language === "fr" ? 622 : 633;
+    await admin
+      .getByRole("button", {
+        name:
+          language === "ar"
+            ? "إعداد السعر الافتراضي"
+            : language === "fr"
+              ? "Configurer le tarif par défaut"
+              : "Set default rate",
+        exact: true,
+      })
+      .click();
     await admin.locator("#rate-home").fill(String(homePrice));
     await admin.locator("#rate-office").fill("377");
     const saved = admin.waitForResponse(
@@ -123,12 +135,18 @@ for (const language of ["ar", "fr", "en"] as const)
     );
     await admin.getByRole("button", { name: w.save, exact: true }).click();
     expect((await saved).status()).toBe(200);
-    await expect(admin.getByTestId("shipping-row-16")).toContainText(
-      String(homePrice),
-    );
-    await expect(admin.getByTestId("shipping-row-58")).toContainText(
-      String(homePrice),
-    );
+    await expect(
+      admin
+        .getByTestId("shipping-row-16")
+        .locator('input[type="number"]')
+        .first(),
+    ).toHaveValue(String(homePrice));
+    await expect(
+      admin
+        .getByTestId("shipping-row-58")
+        .locator('input[type="number"]')
+        .first(),
+    ).toHaveValue(String(homePrice));
     // The other tab updates from BroadcastChannel without a reload.
     await expect(page.getByTestId("delivery-price")).toContainText(
       String(homePrice),

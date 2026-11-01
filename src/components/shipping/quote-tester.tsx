@@ -14,7 +14,7 @@ export function QuoteTester({
   mode: AdministrativeMode;
   wilayas: LocationOption[];
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [wilaya, setWilaya] = useState("");
   const [communes, setCommunes] = useState<LocationOption[]>([]);
   const [commune, setCommune] = useState("");
@@ -79,7 +79,7 @@ export function QuoteTester({
             <option value="">{t("اختر الولاية")}</option>
             {wilayas.map((w) => (
               <option key={w.id} value={w.code}>
-                {t(w.code)} · {t(w.nameAr)}
+                {t(w.code)} · {language === "ar" ? w.nameAr : w.nameLatin}
               </option>
             ))}
           </select>
@@ -98,7 +98,7 @@ export function QuoteTester({
             <option value="">{t("اختر البلدية")}</option>
             {communes.map((c) => (
               <option key={c.id} value={c.id}>
-                {t(c.nameAr)}
+                {language === "ar" ? c.nameAr : c.nameLatin}
               </option>
             ))}
           </select>

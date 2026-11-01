@@ -1,4 +1,126 @@
 export const messages: Record<string, { en: string; fr: string }> = {
+  "صف CSV رقم": { en: "CSV row", fr: "Ligne CSV n°" },
+  "غير صالح أو مكرر. تحقق من المعرف والأسعار وحالات التفعيل.": {
+    en: "is invalid or duplicated. Check the ID, prices and enabled statuses.",
+    fr: "invalide ou dupliquée. Vérifiez l’identifiant, les prix et les statuts d’activation.",
+  },
+  "مرّر الجدول أفقيًا لعرض جميع الأعمدة.": {
+    en: "Scroll the table horizontally to see all columns.",
+    fr: "Faites défiler le tableau horizontalement pour voir toutes les colonnes.",
+  },
+  "أسعار الشحن بالدينار للمنزل والمكتب": {
+    en: "Home and office shipping rates in DZD",
+    fr: "Tarifs domicile et bureau en DZD",
+  },
+  "أسعار مستقلة لكل نظام. استثناءات البلديات لها الأولوية.": {
+    en: "Rates are separate for each regional system. Commune overrides take priority.",
+    fr: "Tarifs indépendants par découpage. Les exceptions communales sont prioritaires.",
+  },
+  "إضافة تجاوز بلدية": {
+    en: "Add commune override",
+    fr: "Ajouter une exception communale",
+  },
+  "إعداد السعر الافتراضي": {
+    en: "Set default rate",
+    fr: "Configurer le tarif par défaut",
+  },
+  "إغلاق النافذة": { en: "Close dialog", fr: "Fermer la fenêtre" },
+  إلغاء: { en: "Cancel", fr: "Annuler" },
+  "إلغاء التحديد": { en: "Clear selection", fr: "Effacer la sélection" },
+  "إلغاء التعديلات": { en: "Discard changes", fr: "Annuler les modifications" },
+  "استيراد CSV": { en: "Import CSV", fr: "Importer CSV" },
+  "استيراد وحفظ": { en: "Import and save", fr: "Importer et enregistrer" },
+  "اسم الولاية أو رمزها": {
+    en: "Wilaya name or code",
+    fr: "Nom ou code de la wilaya",
+  },
+  الإجراءات: { en: "Actions", fr: "Actions" },
+  التالي: { en: "Next", fr: "Suivant" },
+  "التغييرات تحتاج إلى حفظ": {
+    en: "Changes must be saved",
+    fr: "Modifications à enregistrer",
+  },
+  الرمز: { en: "Code", fr: "Code" },
+  السابق: { en: "Previous", fr: "Précédent" },
+  "السعر صفر يعني توصيلًا مجانيًا. الحفظ يطبّق القاعدة في النظام المختار فقط.":
+    {
+      en: "Zero means free delivery. Saving applies this rule only to the selected regional system.",
+      fr: "Zéro signifie livraison gratuite. La règle s’applique uniquement au découpage choisi.",
+    },
+  "المحدد:": { en: "Selected:", fr: "Sélectionnées :" },
+  "المكتب متاح": { en: "Office available", fr: "Bureau disponible" },
+  "المنطقة غير متاحة؛ عدّل القاعدة لتفعيلها.": {
+    en: "Region unavailable; edit the rule to enable it.",
+    fr: "Zone indisponible ; modifiez la règle pour l’activer.",
+  },
+  "النتائج:": { en: "Results:", fr: "Résultats :" },
+  الولايات: { en: "Wilayas", fr: "Wilayas" },
+  "تجاوزات البلديات": { en: "Commune overrides", fr: "Exceptions communales" },
+  "تحديد كل نتائج البحث": {
+    en: "Select all search results",
+    fr: "Sélectionner tous les résultats",
+  },
+  "تسبق أسعار الولاية والافتراضي، ولا تتغير بتعديل جدول الولايات.": {
+    en: "These take priority over wilaya and default rates, and remain unchanged when editing the table.",
+    fr: "Prioritaires sur les tarifs de wilaya et par défaut, elles restent inchangées lors de la modification du tableau.",
+  },
+  "تعديل الولايات المحددة": {
+    en: "Edit selected wilayas",
+    fr: "Modifier les wilayas sélectionnées",
+  },
+  "تعديل جماعي": { en: "Bulk edit", fr: "Modification groupée" },
+  "تعديل قاعدة الشحن": {
+    en: "Edit shipping rule",
+    fr: "Modifier la règle de livraison",
+  },
+  "تعديلات غير محفوظة": {
+    en: "Unsaved changes",
+    fr: "Modifications non enregistrées",
+  },
+  "تفعيل المكتب": { en: "Enable office", fr: "Activer le bureau" },
+  "تفعيل المنزل": { en: "Enable home", fr: "Activer le domicile" },
+  "جدول أسعار الشحن": {
+    en: "Shipping rates table",
+    fr: "Tableau des tarifs de livraison",
+  },
+  "حالة المكتب": { en: "Office status", fr: "Statut bureau" },
+  "حالة المنزل": { en: "Home status", fr: "Statut domicile" },
+  "حفظ التعديلات": { en: "Save changes", fr: "Enregistrer les modifications" },
+  "ستفقد تعديلات الجدول غير المحفوظة. هل تريد المتابعة؟": {
+    en: "Unsaved table changes will be lost. Continue?",
+    fr: "Les modifications non enregistrées seront perdues. Continuer ?",
+  },
+  "سعر المكتب بالدينار": {
+    en: "Office price in DZD",
+    fr: "Prix bureau en DZD",
+  },
+  "سعر المنزل بالدينار": {
+    en: "Home price in DZD",
+    fr: "Prix domicile en DZD",
+  },
+  "سيُطبّق كامل هذه القاعدة على الولايات المحددة فقط. تبقى تجاوزات البلديات كما هي.":
+    {
+      en: "This entire rule replaces the rules for selected wilayas only. Commune overrides remain unchanged.",
+      fr: "Cette règle complète remplace celles des wilayas sélectionnées uniquement. Les exceptions communales sont conservées.",
+    },
+  "صفوف لكل صفحة": { en: "Rows per page", fr: "Lignes par page" },
+  "عدّل السعر أو الحالة، ثم احفظ التعديلات. لا تتغير استثناءات البلديات.": {
+    en: "Edit prices or statuses, then save. Commune overrides are preserved.",
+    fr: "Modifiez les prix ou statuts, puis enregistrez. Les exceptions communales sont conservées.",
+  },
+  "فعّل المكتب العام من إعدادات الشحن.": {
+    en: "Enable the generic office in shipping settings.",
+    fr: "Activez le bureau générique dans les paramètres de livraison.",
+  },
+  "لا توجد تجاوزات بلديات محفوظة.": {
+    en: "No saved commune overrides.",
+    fr: "Aucune exception communale enregistrée.",
+  },
+  "مسح التصفية": { en: "Clear filters", fr: "Effacer les filtres" },
+  "يسمح المكتب العام باختيار التوصيل إلى المكتب دون قائمة مكاتب ناقل.": {
+    en: "Generic office delivery works without a carrier office directory.",
+    fr: "Le bureau générique permet la livraison sans annuaire de bureaux de transporteur.",
+  },
   تحديث: { en: "Refresh", fr: "Actualiser" },
   "إعادة المحاولة": { en: "Try again", fr: "Réessayer" },
   الإجمالي: { en: "Total", fr: "Total" },
