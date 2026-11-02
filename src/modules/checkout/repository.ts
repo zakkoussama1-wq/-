@@ -40,7 +40,7 @@ async function ensure(db: DatabaseSync, merchant: string) {
       "INSERT OR IGNORE INTO checkout_settings(merchant_id,discount_json) VALUES(?,?)",
     )
     .run(merchant, JSON.stringify({ type: "none", value: 0 }));
-  if (created.changes)
+  if (created.changes && process.env.NODE_ENV !== "production")
     await db
       .prepare("INSERT OR IGNORE INTO checkout_products VALUES(?,?,?)")
       .run(merchant, demoProduct.id, JSON.stringify(demoProduct));

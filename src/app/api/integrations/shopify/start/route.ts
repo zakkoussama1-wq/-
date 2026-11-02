@@ -45,6 +45,7 @@ export async function POST(request: Request) {
       throw new Error("أدخل نطاق المتجر فقط.");
     const shop = shopHostname(input.shop);
     if (
+      process.env.NODE_ENV !== "production" &&
       process.env.SHOPIFY_SHOP &&
       shop !== shopHostname(process.env.SHOPIFY_SHOP)
     )

@@ -19,7 +19,12 @@ if (!env.POSTGRES_TEST_URL) {
 }
 const result = spawnSync(
   "npm",
-  ["test", "--", "tests/postgres.integration.test.ts"],
+  [
+    "test",
+    "--",
+    "tests/postgres.integration.test.ts",
+    "tests/multitenant-security.test.ts",
+  ],
   { env, stdio: "inherit" },
 );
 process.exit(result.status ?? 1);

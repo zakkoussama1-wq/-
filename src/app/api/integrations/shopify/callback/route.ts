@@ -43,6 +43,7 @@ export async function GET(request: Request) {
       );
     const shop = shopHostname(p.get("shop") ?? "");
     if (
+      process.env.NODE_ENV !== "production" &&
       process.env.SHOPIFY_SHOP &&
       shop !== shopHostname(process.env.SHOPIFY_SHOP)
     )
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
       !session.refreshTokenExpires
     )
       throw new Error("Invalid offline authorization");
-    await verifyShopSession(session);
+    const verifiedShop = await verifyShopSession(session);
     await registerUninstallWebhook(session);
     await saveConnection(
       merchant,
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
       session.accessToken,
       session.scope ?? "",
       session,
+      verifiedShop.id,
     );
     headers.set("Location", new URL("/dashboard", origin).href);
     headers.set("Cache-Control", "no-store");

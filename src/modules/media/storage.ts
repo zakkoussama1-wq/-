@@ -17,7 +17,10 @@ export interface MediaStorage {
     bytes: Buffer,
     dimensions: { width: number; height: number },
   ): Promise<string>;
-  get(filename: string): Promise<{ bytes: Buffer; metadata: MediaRecord }>;
+  get(
+    filename: string,
+    merchant?: string,
+  ): Promise<{ bytes: Buffer; metadata: MediaRecord }>;
 }
 export function mediaRoot() {
   if (process.env.MEDIA_STORAGE_PATH)
@@ -56,12 +59,14 @@ export class LocalMediaStorage implements MediaStorage {
     );
     return "/media/" + filename;
   }
-  async get(filename: string) {
+  async get(filename: string, merchant?: string) {
     if (!mediaFilename.test(filename))
       throw new RangeError("الصورة غير موجودة.");
     const metadata: MediaRecord = JSON.parse(
       await readFile(join(this.root, filename + ".json"), "utf8"),
     );
+    if (merchant && metadata.merchant !== merchant)
+      throw new RangeError("الصورة لا تنتمي إلى متجرك.");
     const bytes = await readFile(join(this.root, filename));
     return { bytes, metadata };
   }
@@ -79,7 +84,10 @@ export async function assertOwnedMedia(
   for (const reference of new Set(references.filter((s): s is string => !!s))) {
     if (!reference.startsWith("/media/")) continue;
     try {
-      const { metadata } = await mediaStorage().get(reference.slice(7));
+      const { metadata } = await mediaStorage().get(
+        reference.slice(7),
+        merchant,
+      );
       if (metadata.merchant !== merchant) throw new Error();
     } catch {
       throw new RangeError("الصورة غير موجودة أو لا تنتمي إلى متجرك.");

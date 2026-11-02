@@ -91,6 +91,20 @@ export class Database {
   }
   private connection?: Promise<PoolClient>;
   constructor(file: string, options?: { readOnly?: boolean }) {
+    if (process.env.NODE_ENV === "production") {
+      if (
+        !process.env.DATABASE_URL ||
+        !/^postgres(?:ql)?:\/\//.test(process.env.DATABASE_URL)
+      )
+        throw new Error(
+          "Production requires PostgreSQL; SQLite fallback is disabled",
+        );
+      if (
+        process.env.DZ_LOCAL_DEMO === "1" ||
+        process.env.DZ_AUTH_TEST_BYPASS === "1"
+      )
+        throw new Error("Development bypass is forbidden in production");
+    }
     this.file = resolve(file);
     if (process.env.DATABASE_URL) this.connection = postgresPool().connect();
     else this.sqlite = new DatabaseSync(file, options ?? {});

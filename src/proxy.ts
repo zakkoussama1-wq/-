@@ -1,6 +1,37 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { validSession } from "@/modules/auth/store";
+import { localMerchantId } from "@/modules/merchants/local-context";
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (process.env.NODE_ENV === "production") {
+    const bootstrap = [
+      "/api/auth",
+      "/api/health",
+      "/api/shopify/webhooks",
+      "/api/integrations/shopify/callback",
+      "/api/integrations/shopify/start",
+      "/api/integrations/shopify",
+    ];
+    if (
+      path.startsWith("/api/") &&
+      !path.startsWith("/api/geography/") &&
+      !bootstrap.includes(path)
+    ) {
+      try {
+        await localMerchantId(request);
+      } catch {
+        return NextResponse.json(
+          { error: "Authenticated Shopify tenant required" },
+          { status: 401, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+    }
+    if (path.startsWith("/api/simulation/") || path === "/api/advertising")
+      return NextResponse.json(
+        { error: "Production advertising is not configured" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+  }
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.DZ_AUTH_TEST_BYPASS === "1"
@@ -37,5 +68,7 @@ export const config = {
     "/api/products/:path*",
     "/api/advertising/:path*",
     "/api/integrations/:path*",
+    "/api/checkout/:path*",
+    "/api/simulation/:path*",
   ],
 };

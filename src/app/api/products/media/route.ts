@@ -15,6 +15,11 @@ export async function GET() {
   );
 }
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV === "production")
+    return Response.json(
+      { error: "Manual media uploads are disabled in Shopify production mode" },
+      { status: 503 },
+    );
   const url = new URL(request.url);
   if (
     request.headers.get("origin") !==

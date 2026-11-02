@@ -11,6 +11,8 @@ const files = [
     tables: [
       "owner",
       "accounts",
+      "shopify_shops",
+      "tenant_secrets",
       "sessions",
       "auth_limits",
       "form_settings",

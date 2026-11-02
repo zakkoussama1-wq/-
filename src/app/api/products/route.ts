@@ -14,6 +14,11 @@ export async function GET(request: Request) {
   }
 }
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV === "production")
+    return Response.json(
+      { error: "Shopify products are read-only here; synchronization pending" },
+      { status: 503 },
+    );
   const u = new URL(request.url);
   if (
     request.headers.get("origin") !==

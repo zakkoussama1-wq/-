@@ -14,6 +14,7 @@ export async function authDb() {
     : join(process.cwd(), "data", "auth.sqlite");
   mkdirSync(dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
+  await db.exec("PRAGMA foreign_keys=ON");
   await db.exec(
     `PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS owner(id INTEGER PRIMARY KEY CHECK(id=1),salt TEXT NOT NULL,hash TEXT NOT NULL); CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY,expires INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS auth_limits(bucket INTEGER PRIMARY KEY,count INTEGER NOT NULL);`,
   );
@@ -119,6 +120,7 @@ export async function sessionMerchant(token: string): Promise<string | null> {
     const row = await db
       .prepare("SELECT merchant_id FROM sessions WHERE hash=? AND expires>?")
       .get(createHash("sha256").update(token).digest("hex"), Date.now());
+    if (process.env.NODE_ENV === "production" && !row?.merchant_id) return null;
     return row
       ? String(
           row.merchant_id ??

@@ -8,6 +8,7 @@ import { authDb } from "../../auth/store";
 import { shopHostname } from "./client";
 import { Session } from "@shopify/shopify-api";
 import { shopifySdk, SHOPIFY_SCOPES } from "./sdk";
+import { bindVerifiedShop, shopSchema } from "../../merchants/shops";
 function key() {
   const value = process.env.INTEGRATIONS_ENCRYPTION_KEY;
   if (!value || !/^[a-f0-9]{64}$/i.test(value))
@@ -16,6 +17,7 @@ function key() {
 }
 async function dbOpen() {
   const db = await authDb();
+  await db.exec(shopSchema);
   await db.exec(
     "CREATE TABLE IF NOT EXISTS shopify_states(state_hash TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,shop TEXT NOT NULL,expires INTEGER NOT NULL);CREATE TABLE IF NOT EXISTS shopify_connections(merchant_id TEXT PRIMARY KEY,shop TEXT NOT NULL,encrypted_token TEXT NOT NULL,scope TEXT NOT NULL,updated_at TEXT NOT NULL)",
   );
@@ -106,7 +108,10 @@ export async function saveConnection(
   token: string,
   scope: string,
   session?: Session,
+  verifiedShopId?: string,
 ) {
+  if (process.env.NODE_ENV === "production" && !verifiedShopId)
+    throw new Error("Verified Shopify shop identity required");
   shop = shopHostname(shop);
   if (
     session &&
@@ -126,6 +131,8 @@ export async function saveConnection(
       .get(shop, merchant);
     if (bound)
       throw new Error("Shop already belongs to another merchant account");
+    if (verifiedShopId)
+      await bindVerifiedShop(db, merchant, shop, verifiedShopId);
     await db
       .prepare(
         "INSERT INTO shopify_connections VALUES(?,?,?,?,?) ON CONFLICT(merchant_id) DO UPDATE SET shop=excluded.shop,encrypted_token=excluded.encrypted_token,scope=excluded.scope,updated_at=excluded.updated_at",
@@ -277,6 +284,11 @@ export async function uninstallConnection(
         )
         .all(shop, triggeredAt);
       for (const row of rows) {
+        await db
+          .prepare(
+            "UPDATE shopify_shops SET active=0 WHERE merchant_id=? AND domain=?",
+          )
+          .run(String(row.merchant_id), shop);
         await db
           .prepare("DELETE FROM shopify_session_metadata WHERE merchant_id=?")
           .run(String(row.merchant_id));

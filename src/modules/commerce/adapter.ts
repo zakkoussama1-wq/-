@@ -27,8 +27,17 @@ export interface CommerceAdapter {
 export const localCommerceAdapter: CommerceAdapter = {
   source: "local",
   quote: async (merchant, input, productId) =>
-    priceCheckout(merchant, input, await getFormSettings(merchant, productId)),
+    process.env.NODE_ENV === "production"
+      ? Promise.reject(new Error("Shopify commerce adapter required"))
+      : priceCheckout(
+          merchant,
+          input,
+          await getFormSettings(merchant, productId),
+        ),
   catalog: getCheckoutCatalog,
-  submit: createOrder,
+  submit: (...args) =>
+    process.env.NODE_ENV === "production"
+      ? Promise.reject(new Error("Shopify order workflow is not implemented"))
+      : createOrder(...args),
   orders: listOrders,
 };

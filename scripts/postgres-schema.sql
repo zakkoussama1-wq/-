@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS owner(id INTEGER PRIMARY KEY CHECK(id=1),salt TEXT NO
 CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY,expires BIGINT NOT NULL,merchant_id TEXT);
 CREATE TABLE IF NOT EXISTS auth_limits(bucket INTEGER PRIMARY KEY,count INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS accounts(merchant_id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,name TEXT NOT NULL,salt TEXT NOT NULL,hash TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS shopify_shops(shop_id TEXT PRIMARY KEY,domain TEXT UNIQUE NOT NULL,merchant_id TEXT UNIQUE NOT NULL REFERENCES accounts(merchant_id),active INTEGER NOT NULL CHECK(active IN (0,1)),verified_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS tenant_secrets(merchant_id TEXT NOT NULL REFERENCES accounts(merchant_id),provider TEXT NOT NULL,encrypted_value TEXT NOT NULL,PRIMARY KEY(merchant_id,provider));
 CREATE TABLE IF NOT EXISTS form_settings(merchant_id TEXT PRIMARY KEY,settings TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS shopify_states(state_hash TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,shop TEXT NOT NULL,expires BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS shopify_connections(merchant_id TEXT PRIMARY KEY,shop TEXT NOT NULL,encrypted_token TEXT NOT NULL,scope TEXT NOT NULL,updated_at TEXT NOT NULL);
