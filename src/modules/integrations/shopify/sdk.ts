@@ -32,9 +32,9 @@ export function shopifyConfiguration() {
     throw new Error(
       "Shopify requires configured HTTPS application URLs and credentials.",
     );
-  const authorizedShop = process.env.SHOPIFY_SHOP
-    ? shopHostname(process.env.SHOPIFY_SHOP)
-    : undefined;
+  const authorizedShop = shopHostname(
+    process.env.SHOPIFY_SHOP ?? "h8vsym-t0.myshopify.com",
+  );
   return { redirect, origin: redirect.origin, authorizedShop };
 }
 

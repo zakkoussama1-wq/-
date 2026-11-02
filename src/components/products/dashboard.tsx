@@ -19,6 +19,8 @@ import { formatDzd } from "@/lib/i18n";
 export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
   const { t, language } = useLanguage();
   const [catalog, setCatalog] = useState<CheckoutCatalog | null>(null);
+  const [shopify, setShopify] = useState(false);
+  const [shopDomain, setShopDomain] = useState("");
   const [draft, setDraft] = useState<CheckoutProduct | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -32,6 +34,18 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
   const [size, setSize] = useState(10);
   const [store, setStore] = useState<string | null>(null);
   const [linksReady, setLinksReady] = useState(false);
+  useEffect(() => {
+    if (!shopify) return;
+    const refresh = () => {
+      if (document.visibilityState === "visible") setRevision((n) => n + 1);
+    };
+    const interval = setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [shopify]);
   useEffect(() => {
     const abort = new AbortController();
     fetch("/api/auth", { signal: abort.signal })
@@ -61,8 +75,11 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
     fetch("/api/products", { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error();
-        const data = catalogSchema.parse(await response.json());
+        const raw = await response.json();
+        const data = catalogSchema.parse(raw);
         if (!controller.signal.aborted) {
+          setShopify(raw.source === "shopify");
+          setShopDomain(raw.shop ?? "");
           setCatalog(data);
           setError("");
         }
@@ -78,7 +95,7 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
     return () => clearTimeout(timer);
   }, [notice]);
   async function save(removing = false) {
-    if (!draft || !catalog || saving.current || uploading) return;
+    if (shopify || !draft || !catalog || saving.current || uploading) return;
     setError("");
     setNotice("");
     const p = productSchema.safeParse(
@@ -155,32 +172,40 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
       <div className="data-toolbar">
         <div>
           <h2>{t("إدارة منتجات متجرك")}</h2>
-          <p>{t("أدر الأسعار والخيارات والمخزون من مكان واحد.")}</p>
+          <p>
+            {shopify
+              ? t(
+                  "تُقرأ المنتجات والأسعار والخيارات من Shopify. عدّلها في متجرك.",
+                )
+              : t("أدر الأسعار والخيارات والمخزون من مكان واحد.")}
+          </p>
         </div>
-        <Button
-          size="sm"
-          disabled={!catalog || busy}
-          onClick={() => {
-            setError("");
-            setDraft({
-              id: crypto.randomUUID(),
-              name: "",
-              demo: false,
-              active: true,
-              variants: [
-                {
-                  id: crypto.randomUUID(),
-                  name: "الخيار الأساسي",
-                  priceMinor: 0,
-                  stock: null,
-                },
-              ],
-            });
-          }}
-        >
-          <Plus size={15} />
-          {t("إضافة منتج")}
-        </Button>
+        {!shopify && (
+          <Button
+            size="sm"
+            disabled={!catalog || busy}
+            onClick={() => {
+              setError("");
+              setDraft({
+                id: crypto.randomUUID(),
+                name: "",
+                demo: false,
+                active: true,
+                variants: [
+                  {
+                    id: crypto.randomUUID(),
+                    name: "الخيار الأساسي",
+                    priceMinor: 0,
+                    stock: null,
+                  },
+                ],
+              });
+            }}
+          >
+            <Plus size={15} />
+            {t("إضافة منتج")}
+          </Button>
+        )}
       </div>
       {error && !draft && (
         <div className="data-error" role="alert">
@@ -336,85 +361,98 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
                           )}
                         </td>
                         <td>
-                          {linksReady && p.active ? (
+                          {shopify ? (
+                            <a
+                              href={`https://${shopDomain}/admin/products/${encodeURIComponent(p.id.split("/").pop() ?? "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {t("تعديل في Shopify")}
+                            </a>
+                          ) : (
                             <>
-                              <Button asChild size="sm" variant="outline">
-                                <a
-                                  href={productFormLink(p.id, store)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  aria-label={`${t("فتح نموذج المنتج")} ${p.name}`}
-                                >
+                              {" "}
+                              {linksReady && p.active ? (
+                                <>
+                                  <Button asChild size="sm" variant="outline">
+                                    <a
+                                      href={productFormLink(p.id, store)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      aria-label={`${t("فتح نموذج المنتج")} ${p.name}`}
+                                    >
+                                      {t("فتح نموذج المنتج")}
+                                    </a>
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label={`${t("نسخ رابط المنتج")} ${p.name}`}
+                                    onClick={async () => {
+                                      try {
+                                        await navigator.clipboard.writeText(
+                                          new URL(
+                                            productFormLink(p.id, store),
+                                            window.location.origin,
+                                          ).href,
+                                        );
+                                        setNotice("تم نسخ رابط نموذج المنتج.");
+                                      } catch {
+                                        setError(
+                                          "تعذر نسخ الرابط. افتح النموذج وانسخ العنوان.",
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    {t("نسخ الرابط")}
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button size="sm" variant="outline" disabled>
                                   {t("فتح نموذج المنتج")}
-                                </a>
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                aria-label={`${t("تعديل")} ${t(p.name)}`}
+                                onClick={() => {
+                                  setDeleteConfirm(false);
+                                  setDraft(structuredClone(p));
+                                  setError("");
+                                }}
+                              >
+                                <Pencil size={13} />
+                                {t("تعديل")}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                aria-label={`${t("نسخ رابط المنتج")} ${p.name}`}
-                                onClick={async () => {
-                                  try {
-                                    await navigator.clipboard.writeText(
-                                      new URL(
-                                        productFormLink(p.id, store),
-                                        window.location.origin,
-                                      ).href,
-                                    );
-                                    setNotice("تم نسخ رابط نموذج المنتج.");
-                                  } catch {
-                                    setError(
-                                      "تعذر نسخ الرابط. افتح النموذج وانسخ العنوان.",
-                                    );
-                                  }
+                                disabled={busy}
+                                aria-label={`${t("نسخ المنتج")} ${p.name}`}
+                                onClick={() => {
+                                  setDeleteConfirm(false);
+                                  setError("");
+                                  setDraft({
+                                    ...structuredClone(p),
+                                    id: crypto.randomUUID(),
+                                    sku: "",
+                                    name: `${p.name} (${t("نسخة")})`,
+                                    demo: false,
+                                    deleted: false,
+                                    variants: p.variants.map((v) => ({
+                                      ...v,
+                                      id: crypto.randomUUID(),
+                                      sku: "",
+                                    })),
+                                  });
                                 }}
                               >
-                                {t("نسخ الرابط")}
+                                {t("نسخ المنتج")}
                               </Button>
                             </>
-                          ) : (
-                            <Button size="sm" variant="outline" disabled>
-                              {t("فتح نموذج المنتج")}
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={busy}
-                            aria-label={`${t("تعديل")} ${t(p.name)}`}
-                            onClick={() => {
-                              setDeleteConfirm(false);
-                              setDraft(structuredClone(p));
-                              setError("");
-                            }}
-                          >
-                            <Pencil size={13} />
-                            {t("تعديل")}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={busy}
-                            aria-label={`${t("نسخ المنتج")} ${p.name}`}
-                            onClick={() => {
-                              setDeleteConfirm(false);
-                              setError("");
-                              setDraft({
-                                ...structuredClone(p),
-                                id: crypto.randomUUID(),
-                                sku: "",
-                                name: `${p.name} (${t("نسخة")})`,
-                                demo: false,
-                                deleted: false,
-                                variants: p.variants.map((v) => ({
-                                  ...v,
-                                  id: crypto.randomUUID(),
-                                  sku: "",
-                                })),
-                              });
-                            }}
-                          >
-                            {t("نسخ المنتج")}
-                          </Button>
+                          )}{" "}
                         </td>
                       </tr>
                     ))}
@@ -441,9 +479,13 @@ export function ProductsDashboard({ onSaved }: { onSaved: () => void }) {
         )}
       </Surface>
       <p className="data-note">
-        {t(
-          "الأسعار بالدينار؛ المخزون هو الكمية المتاحة بعد الحجوزات. تُحجز الكمية عند حفظ الطلب وتُعاد مرة واحدة عند إلغائه. المنتجات الموقوفة لا تظهر للعميل. لا تُحذف الخيارات المحفوظة حفاظًا على سجل المخزون.",
-        )}
+        {shopify
+          ? t(
+              "لقطة Shopify تُحدّث عند إعادة القراءة بعد دقيقة أو عند وصول webhook. لا ينشأ حجز مخزون أو طلب Shopify في هذه المرحلة.",
+            )
+          : t(
+              "الأسعار بالدينار؛ المخزون هو الكمية المتاحة بعد الحجوزات. تُحجز الكمية عند حفظ الطلب وتُعاد مرة واحدة عند إلغائه. المنتجات الموقوفة لا تظهر للعميل. لا تُحذف الخيارات المحفوظة حفاظًا على سجل المخزون.",
+            )}
       </p>
       {notice && (
         <Toast closeLabel={t("إغلاق الإشعار")} onClose={() => setNotice("")}>

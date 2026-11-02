@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS auth_limits(bucket INTEGER PRIMARY KEY,count INTEGER 
 CREATE TABLE IF NOT EXISTS accounts(merchant_id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,name TEXT NOT NULL,salt TEXT NOT NULL,hash TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS shopify_shops(shop_id TEXT PRIMARY KEY,domain TEXT UNIQUE NOT NULL,merchant_id TEXT UNIQUE NOT NULL REFERENCES accounts(merchant_id),active INTEGER NOT NULL CHECK(active IN (0,1)),verified_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS tenant_secrets(merchant_id TEXT NOT NULL REFERENCES accounts(merchant_id),provider TEXT NOT NULL,encrypted_value TEXT NOT NULL,PRIMARY KEY(merchant_id,provider));
+CREATE TABLE IF NOT EXISTS shopify_catalog(merchant_id TEXT PRIMARY KEY REFERENCES accounts(merchant_id),shop_id TEXT NOT NULL,payload TEXT NOT NULL,synced_at TEXT NOT NULL,revision INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS shopify_catalog_dirty(merchant_id TEXT PRIMARY KEY REFERENCES accounts(merchant_id),dirty INTEGER NOT NULL DEFAULT 1,error TEXT NOT NULL DEFAULT '');
 CREATE TABLE IF NOT EXISTS form_settings(merchant_id TEXT PRIMARY KEY,settings TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS shopify_states(state_hash TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,shop TEXT NOT NULL,expires BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS shopify_connections(merchant_id TEXT PRIMARY KEY,shop TEXT NOT NULL,encrypted_token TEXT NOT NULL,scope TEXT NOT NULL,updated_at TEXT NOT NULL);

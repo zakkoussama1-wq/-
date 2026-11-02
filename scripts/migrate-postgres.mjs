@@ -12,6 +12,8 @@ const files = [
       "owner",
       "accounts",
       "shopify_shops",
+      "shopify_catalog",
+      "shopify_catalog_dirty",
       "tenant_secrets",
       "sessions",
       "auth_limits",

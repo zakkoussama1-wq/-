@@ -1,12 +1,22 @@
 import { z } from "zod";
 import { localMerchantId } from "@/modules/merchants/local-context";
-import { getCheckoutCatalog, saveProduct } from "@/modules/checkout/repository";
+import { saveProduct } from "@/modules/checkout/repository";
+import { localCommerceAdapter } from "@/modules/commerce/adapter";
+import { shopifyCatalogMode } from "@/modules/integrations/shopify/catalog";
+import { verifiedShopForMerchant } from "@/modules/merchants/shops";
 import { productSchema } from "@/modules/checkout/schema";
 import { ConflictError } from "@/modules/shipping/repository";
 export async function GET(request: Request) {
   try {
+    const merchant = await localMerchantId(request);
     return Response.json(
-      await getCheckoutCatalog(await localMerchantId(request)),
+      {
+        ...(await localCommerceAdapter.catalog(merchant)),
+        shop: shopifyCatalogMode()
+          ? (await verifiedShopForMerchant(merchant)).domain
+          : undefined,
+        source: shopifyCatalogMode() ? "shopify" : "local",
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
@@ -14,9 +24,12 @@ export async function GET(request: Request) {
   }
 }
 export async function POST(request: Request) {
-  if (process.env.NODE_ENV === "production")
+  if (process.env.NODE_ENV === "production" || shopifyCatalogMode())
     return Response.json(
-      { error: "Shopify products are read-only here; synchronization pending" },
+      {
+        error:
+          "Edit Shopify products in Shopify Admin; local changes are disabled",
+      },
       { status: 503 },
     );
   const u = new URL(request.url);

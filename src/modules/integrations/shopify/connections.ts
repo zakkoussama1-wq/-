@@ -133,6 +133,16 @@ export async function saveConnection(
       throw new Error("Shop already belongs to another merchant account");
     if (verifiedShopId)
       await bindVerifiedShop(db, merchant, shop, verifiedShopId);
+    if (verifiedShopId) {
+      await db.exec(
+        "CREATE TABLE IF NOT EXISTS shopify_catalog_dirty(merchant_id TEXT PRIMARY KEY REFERENCES accounts(merchant_id),dirty INTEGER NOT NULL DEFAULT 1,error TEXT NOT NULL DEFAULT '')",
+      );
+      await db
+        .prepare(
+          "INSERT INTO shopify_catalog_dirty VALUES(?,1,'') ON CONFLICT(merchant_id) DO UPDATE SET dirty=1,error=''",
+        )
+        .run(merchant);
+    }
     await db
       .prepare(
         "INSERT INTO shopify_connections VALUES(?,?,?,?,?) ON CONFLICT(merchant_id) DO UPDATE SET shop=excluded.shop,encrypted_token=excluded.encrypted_token,scope=excluded.scope,updated_at=excluded.updated_at",

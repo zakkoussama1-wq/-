@@ -2926,4 +2926,39 @@ export const messages: Record<string, { en: string; fr: string }> = {
     en: "Selector and price summary labels",
     fr: "Libellés des listes et du récapitulatif",
   },
+  "تُقرأ المنتجات والأسعار والخيارات من Shopify. عدّلها في متجرك.": {
+    en: "Products, prices and variants come from Shopify. Edit them in your store.",
+    fr: "Produits, prix et variantes lus depuis Shopify. Modifiez-les dans votre boutique.",
+  },
+  "تعديل في Shopify": { en: "Edit in Shopify", fr: "Modifier dans Shopify" },
+  "لقطة Shopify تُحدّث عند إعادة القراءة بعد دقيقة أو عند وصول webhook. لا ينشأ حجز مخزون أو طلب Shopify في هذه المرحلة.":
+    {
+      en: "Shopify snapshot refreshes on the next read after one minute or a webhook. No inventory reservation or Shopify order at this stage.",
+      fr: "Instantané Shopify actualisé après une minute ou un webhook. Aucune réservation ni commande Shopify à cette étape.",
+    },
+  "تُقرأ المنتجات والخيارات والأسعار من Shopify. إنشاء طلبات Shopify وإضافة نموذج الثيم مرحلتان لاحقتان.":
+    {
+      en: "Products, variants and prices are read from Shopify. Shopify orders and the theme block are later stages.",
+      fr: "Produits, variantes et prix lus depuis Shopify. Les commandes et le bloc de thème restent à implémenter.",
+    },
+  "فشلت المزامنة. تحقق من التفويض وعملة المتجر ثم أعد المحاولة.": {
+    en: "Sync failed. Check authorization and store currency, then retry.",
+    fr: "Échec de synchronisation. Vérifiez l’autorisation et la devise, puis réessayez.",
+  },
+  "مزامنة منتجات Shopify": {
+    en: "Sync Shopify products",
+    fr: "Synchroniser les produits Shopify",
+  },
+  "نجح التحقق الحي من المتجر.": {
+    en: "Live shop verification succeeded.",
+    fr: "Vérification réelle de la boutique réussie.",
+  },
+  "تعذر التحقق الحي؛ لا يُعتبر الاتصال مثبتًا.": {
+    en: "Live verification failed; connection is not confirmed.",
+    fr: "Vérification réelle impossible ; connexion non confirmée.",
+  },
+  "التحقق الحي من الاتصال": {
+    en: "Verify live connection",
+    fr: "Vérifier la connexion réelle",
+  },
 };

@@ -42,11 +42,7 @@ export async function GET(request: Request) {
         { status: 400 },
       );
     const shop = shopHostname(p.get("shop") ?? "");
-    if (
-      process.env.NODE_ENV !== "production" &&
-      process.env.SHOPIFY_SHOP &&
-      shop !== shopHostname(process.env.SHOPIFY_SHOP)
-    )
+    if (shop !== shopifyConfiguration().authorizedShop)
       throw new Error("Shop not authorized");
     const merchant = await consumeOAuthState(p.get("state") ?? "", shop);
     const { session, headers } = await shopifySdk().auth.callback<Headers>({

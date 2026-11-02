@@ -24,6 +24,7 @@ const result = spawnSync(
     "--",
     "tests/postgres.integration.test.ts",
     "tests/multitenant-security.test.ts",
+    "tests/shopify-catalog.test.ts",
   ],
   { env, stdio: "inherit" },
 );

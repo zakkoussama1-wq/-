@@ -5,7 +5,8 @@ import { Button } from "../ui/button";
 import { Skeleton, Surface } from "../ui/surface";
 import { RefreshCw } from "lucide-react";
 export function IntegrationsDashboard() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const [syncMessage, setSyncMessage] = useState("");
   const [state, setState] = useState<{
     connected: boolean;
     configured: boolean;
@@ -72,9 +73,13 @@ export function IntegrationsDashboard() {
           </p>
         )}
         <p className="text-sm leading-7">
-          {t(
-            "الربط الحالي يطلب قراءة المنتجات فقط. لا توجد مزامنة منتجات أو إنشاء طلب Shopify تلقائي بعد. نجاح الربط ليس دليلًا على عمل تلك الميزات.",
-          )}
+          {state?.connected
+            ? t(
+                "تُقرأ المنتجات والخيارات والأسعار من Shopify. إنشاء طلبات Shopify وإضافة نموذج الثيم مرحلتان لاحقتان.",
+              )
+            : t(
+                "الربط الحالي يطلب قراءة المنتجات فقط. لا توجد مزامنة منتجات أو إنشاء طلب Shopify تلقائي بعد. نجاح الربط ليس دليلًا على عمل تلك الميزات.",
+              )}
         </p>
         {state && !state.configured && (
           <p
@@ -134,6 +139,66 @@ export function IntegrationsDashboard() {
             {t("تحديث حالة الربط")}
           </Button>
         </div>
+        {state?.connected && (
+          <div className="settings-actions">
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setSyncMessage("");
+                try {
+                  const response = await fetch(
+                    "/api/integrations/shopify/sync",
+                    { method: "POST" },
+                  );
+                  const data = await response.json();
+                  if (!response.ok || !data.synced) throw new Error();
+                  setSyncMessage(
+                    {
+                      ar: `اكتملت المزامنة: ${data.products} منتج.`,
+                      fr: `Synchronisation terminée : ${data.products} produits.`,
+                      en: `Synchronized ${data.products} products.`,
+                    }[language],
+                  );
+                } catch {
+                  setSyncMessage(
+                    t(
+                      "فشلت المزامنة. تحقق من التفويض وعملة المتجر ثم أعد المحاولة.",
+                    ),
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {t("مزامنة منتجات Shopify")}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setSyncMessage("");
+                try {
+                  const r = await fetch("/api/integrations/shopify/verify");
+                  const d = await r.json();
+                  if (!r.ok || !d.verified) throw new Error();
+                  setSyncMessage(t("نجح التحقق الحي من المتجر."));
+                } catch {
+                  setSyncMessage(
+                    t("تعذر التحقق الحي؛ لا يُعتبر الاتصال مثبتًا."),
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {t("التحقق الحي من الاتصال")}
+            </Button>
+          </div>
+        )}
+        {syncMessage && <p role="status">{syncMessage}</p>}
         {url && (
           <a className="block text-emerald-800 underline" href={url}>
             {t("متابعة التفويض على Shopify")}

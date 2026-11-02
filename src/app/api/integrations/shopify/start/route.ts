@@ -44,11 +44,7 @@ export async function POST(request: Request) {
     if (Object.keys(input).length !== 1 || typeof input.shop !== "string")
       throw new Error("أدخل نطاق المتجر فقط.");
     const shop = shopHostname(input.shop);
-    if (
-      process.env.NODE_ENV !== "production" &&
-      process.env.SHOPIFY_SHOP &&
-      shop !== shopHostname(process.env.SHOPIFY_SHOP)
-    )
+    if (shop !== shopifyConfiguration().authorizedShop)
       return Response.json(
         { error: "المتجر غير مصرح به لهذه التجربة." },
         { status: 403 },

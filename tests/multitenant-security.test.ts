@@ -33,6 +33,7 @@ import { Database } from "../src/modules/storage/database";
 import { priceCheckout } from "../src/modules/checkout/service";
 import { createOrder, setOrderStatus } from "../src/modules/orders/repository";
 import { GET as orders } from "../src/app/api/orders/route";
+import { GET as installationStatus } from "../src/app/api/integrations/shopify/route";
 
 const dir = mkdtempSync(join(tmpdir(), "dz-multitenant-"));
 let a: string, b: string, ta: string, tb: string;
@@ -224,10 +225,19 @@ it.skipIf(!process.env.POSTGRES_TEST_URL)(
       await client.query("RESET search_path");
       client.release();
     }
+    const newToken = await accountLogin(
+      "bootstrap@example.test",
+      "fixture-bootstrap-password",
+      "New installation",
+    );
     vi.stubEnv("NODE_ENV", "production");
     try {
       expect(await localMerchantId(request(ta))).toBe(a);
       expect(await localMerchantId(request(tb))).toBe(b);
+      const status = await installationStatus(request(newToken));
+      expect(status.status).toBe(200);
+      expect((await status.json()).connected).toBe(false);
+      await expect(localMerchantId(request(newToken))).rejects.toThrow();
       await expect(
         localMerchantId(request(tb, `?store=${a}`), true),
       ).rejects.toThrow();

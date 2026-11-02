@@ -30,11 +30,11 @@ export const productImageSchema = z
   });
 export const productSchema = z.object({
   id: z.string(),
-  name: z.string().trim().min(1).max(200),
+  name: z.string().trim().min(1).max(255),
   demo: z.boolean(),
   active: z.boolean().default(true),
   sku: z.string().trim().max(100).optional(),
-  description: z.string().trim().max(2000).optional(),
+  description: z.string().trim().max(100000).optional(),
   deleted: z.boolean().optional(),
   compareAtMinor: z.number().int().nonnegative().max(1000000000).optional(),
   imageUrl: productImageSchema.optional(),
@@ -48,6 +48,9 @@ export const productSchema = z.object({
       z.object({
         id: z.string(),
         name: z.string(),
+        selectedOptions: z
+          .array(z.object({ name: z.string(), value: z.string() }))
+          .optional(),
         sku: z.string().trim().max(100).optional(),
         imageUrl: productImageSchema.optional(),
         priceMinor: z.number().int().nonnegative().max(1000000000),
@@ -61,7 +64,7 @@ export const productSchema = z.object({
       }),
     )
     .min(1)
-    .max(100)
+    .max(2048)
     .refine(
       (v) => new Set(v.map((x) => x.id)).size === v.length,
       "معرفات الخيارات مكررة",

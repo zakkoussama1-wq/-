@@ -5,6 +5,10 @@ import type { CheckoutCatalog } from "../checkout/schema";
 import type { StoredOrder } from "../orders/repository";
 import { getCheckoutCatalog } from "../checkout/repository";
 import { createOrder, listOrders } from "../orders/repository";
+import {
+  readShopifyCatalog,
+  shopifyCatalogMode,
+} from "../integrations/shopify/catalog";
 /** Future providers must own authoritative catalog/pricing/order validation.
  * No OAuth, provider transport, or credentials are implemented here.
  */
@@ -34,7 +38,10 @@ export const localCommerceAdapter: CommerceAdapter = {
           input,
           await getFormSettings(merchant, productId),
         ),
-  catalog: getCheckoutCatalog,
+  catalog: (merchant) =>
+    shopifyCatalogMode()
+      ? readShopifyCatalog(merchant)
+      : getCheckoutCatalog(merchant),
   submit: (...args) =>
     process.env.NODE_ENV === "production"
       ? Promise.reject(new Error("Shopify order workflow is not implemented"))
