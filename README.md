@@ -1,5 +1,7 @@
 # DZ Lead Form Pro
 
+تحديث إعداد Shopify: أُنجز أساس المصادقة وwebhook إلغاء التثبيت للمتجر `h8vsym-t0.myshopify.com` باستخدام SDK الرسمي. [دليل الخطوات والحدود](docs/SHOPIFY-INTEGRATION-SETUP.md). التثبيت والاتصال الحي ينتظران تفويض المالك وHTTPS؛ التجربة المحلية باقية كما هي.
+
 تطبيق عربي RTL لطلبات الدفع عند الاستلام في الجزائر. يدعم حسابات تجار مستقلة، المنتجات والمخزون والشحن وتصميم النموذج والطلبات والتحليلات. [حالة التنفيذ والقيود](IMPLEMENTATION_STATUS.md) تفرق بين ما تم اختباره والتكاملات المتبقية.
 
 ## التجربة المحلية الكاملة أولًا
@@ -142,9 +144,9 @@ node scripts/with-postgres.mjs npm run db:migrate-postgres
 
 ## Shopify والتتبع
 
-المتجر الذي حدده المستخدم: `leadformarab.myshopify.com`. راجع `.env.example` وأدخل القيم عبر إعدادات الخادم الآمنة: `SHOPIFY_SHOP`، `SHOPIFY_CLIENT_ID`، `SHOPIFY_CLIENT_SECRET`، `SHOPIFY_REDIRECT_URI`، `INTEGRATIONS_ENCRYPTION_KEY` (٣٢ بايت عشوائية ممثلة بـ٦٤ رمز hex). احتفظ بمفتاح التشفير خارج النسخة الاحتياطية أيضًا.
+المتجر الذي أكده المستخدم: `h8vsym-t0.myshopify.com`. راجع `.env.example` وأدخل القيم عبر إعدادات الخادم الآمنة: `SHOPIFY_SHOP`، `SHOPIFY_CLIENT_ID`، `SHOPIFY_CLIENT_SECRET`، `SHOPIFY_REDIRECT_URI`، `INTEGRATIONS_ENCRYPTION_KEY` (٣٢ بايت عشوائية ممثلة بـ٦٤ رمز hex). احتفظ بمفتاح التشفير خارج النسخة الاحتياطية أيضًا.
 
-URL العودة المسجل في إعدادات تطبيق Shopify يجب أن يطابق `https://YOUR_APP_DOMAIN/api/integrations/shopify/callback`. بدء التفويض من قسم التكاملات؛ state صالح مرة واحدة ومربوط بالتاجر والمتجر، callback يفحص HMAC والوقت، والرمز المخزن مشفر AES-256-GCM. الصلاحية الحالية `read_products` فقط. **لا توجد مزامنة منتجات Shopify أو إنشاء طلب Shopify أو webhooks مسجلة أو فوترة اشتراكات بعد.** لم يتم تفويض المتجر أو اختباره حيًا.
+URL العودة المسجل في إعدادات تطبيق Shopify يجب أن يطابق `https://YOUR_APP_DOMAIN/api/integrations/shopify/callback`. بدء التفويض من قسم التكاملات؛ SDK الرسمي يربط state بالمتصفح، وقاعدة البيانات تربطه بالتاجر والمتجر للاستخدام مرة واحدة. تُشفر رموز الوصول والتحديث AES-256-GCM وتُجدد عند الحاجة. الصلاحية `read_products` فقط، وAdmin API بإصدار `2026-10`. يُسجّل webhook إلغاء التثبيت بعد تفويض ناجح ويُتحقق من توقيعه عند الاستلام. **لا توجد مزامنة منتجات Shopify أو إنشاء طلب Shopify أو فوترة اشتراكات بعد.** لم يتم تفويض المتجر أو اختباره حيًا؛ الاختبارات الحالية بمحاكاة HTTP.
 
 توجد محولات HTTP لأحداث اختبار Meta Lead وTikTok SubmitForm في وحدة التكاملات، مع اشتراط الموافقة وtestMode وtestEventCode وإخفاء الرمز من الأخطاء. لم تُربط بإعدادات حساب التاجر أو إرسال تلقائي، ولم تُرسل أحداث فعلية.
 

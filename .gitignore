@@ -18,3 +18,7 @@ data/local-demo/
 test-results-local/
 
 data/media/
+
+# Shopify CLI local state (account selections and generated runtime state).
+.shopify/
+data/shopify-test/

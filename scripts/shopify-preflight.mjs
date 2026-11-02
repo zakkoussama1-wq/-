@@ -1,6 +1,7 @@
 // Reads runtime configuration only. Never prints credentials or contacts Shopify.
 const issues = [];
 const required = [
+  "SHOPIFY_SHOP",
   "SHOPIFY_CLIENT_ID",
   "SHOPIFY_CLIENT_SECRET",
   "SHOPIFY_REDIRECT_URI",

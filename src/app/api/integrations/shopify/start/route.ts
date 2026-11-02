@@ -1,20 +1,32 @@
-import { localMerchantId } from "@/modules/merchants/local-context";
 import {
-  oauthAuthorizeUrl,
-  shopHostname,
-} from "@/modules/integrations/shopify/client";
+  CALLBACK_PATH,
+  externalShopifyRequest,
+  integrationsDisabled,
+  shopifyConfiguration,
+  shopifyMerchant,
+  shopifySdk,
+} from "@/modules/integrations/shopify/sdk";
+import { shopHostname } from "@/modules/integrations/shopify/client";
 import { createOAuthState } from "@/modules/integrations/shopify/connections";
 export async function POST(request: Request) {
-  if (process.env.DZ_DISABLE_EXTERNAL_INTEGRATIONS === "1")
+  if (integrationsDisabled())
     return Response.json(
       { error: "التكاملات الخارجية معطلة في التجربة المحلية." },
       { status: 503 },
     );
-  const u = new URL(request.url);
-  if (
-    request.headers.get("origin") !==
-    `${u.protocol}//${request.headers.get("host") ?? u.host}`
-  )
+  const merchant = await shopifyMerchant(request);
+  if (!merchant)
+    return Response.json({ error: "يلزم تسجيل الدخول." }, { status: 401 });
+  let origin: string;
+  try {
+    origin = shopifyConfiguration().origin;
+  } catch {
+    return Response.json(
+      { error: "Shopify HTTPS configuration missing" },
+      { status: 503 },
+    );
+  }
+  if (request.headers.get("origin") !== origin)
     return Response.json({ error: "مصدر غير مسموح." }, { status: 403 });
   if (
     !process.env.SHOPIFY_CLIENT_ID ||
@@ -32,18 +44,36 @@ export async function POST(request: Request) {
     if (Object.keys(input).length !== 1 || typeof input.shop !== "string")
       throw new Error("أدخل نطاق المتجر فقط.");
     const shop = shopHostname(input.shop);
-    const state = await createOAuthState(await localMerchantId(request), shop);
-    const url = oauthAuthorizeUrl({
+    if (
+      process.env.SHOPIFY_SHOP &&
+      shop !== shopHostname(process.env.SHOPIFY_SHOP)
+    )
+      return Response.json(
+        { error: "المتجر غير مصرح به لهذه التجربة." },
+        { status: 403 },
+      );
+    const response: Response = await shopifySdk().auth.begin({
       shop,
-      clientId: process.env.SHOPIFY_CLIENT_ID,
-      redirectUri: process.env.SHOPIFY_REDIRECT_URI,
-      state,
-      scopes: ["read_products"],
+      callbackPath: CALLBACK_PATH,
+      isOnline: false,
+      rawRequest: externalShopifyRequest(request),
     });
-    return Response.json({ url }, { headers: { "Cache-Control": "no-store" } });
-  } catch (e) {
+    const url = response.headers.get("location");
+    if (!url) throw new Error("OAuth could not start");
+    await createOAuthState(
+      merchant,
+      shop,
+      new URL(url).searchParams.get("state") ?? "",
+    );
+    const headers = new Headers({ "Cache-Control": "no-store" });
+    for (const cookie of response.headers.getSetCookie())
+      headers.append("Set-Cookie", cookie);
+    return Response.json({ url }, { headers });
+  } catch {
     return Response.json(
-      { error: e instanceof Error ? e.message : "تعذر بدء الربط." },
+      {
+        error: "تعذر بدء الربط. تحقق من إعدادات التطبيق وHTTPS ومفتاح التشفير.",
+      },
       { status: 400 },
     );
   }

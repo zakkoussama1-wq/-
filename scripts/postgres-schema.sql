@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS accounts(merchant_id TEXT PRIMARY KEY,email TEXT UNIQ
 CREATE TABLE IF NOT EXISTS form_settings(merchant_id TEXT PRIMARY KEY,settings TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS shopify_states(state_hash TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,shop TEXT NOT NULL,expires BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS shopify_connections(merchant_id TEXT PRIMARY KEY,shop TEXT NOT NULL,encrypted_token TEXT NOT NULL,scope TEXT NOT NULL,updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS shopify_session_metadata(merchant_id TEXT PRIMARY KEY,encrypted_session TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS shopify_webhook_receipts(shop TEXT NOT NULL,webhook_id TEXT NOT NULL,body_hash TEXT NOT NULL,received_at TEXT NOT NULL,PRIMARY KEY(shop,webhook_id));
 CREATE TABLE IF NOT EXISTS checkout_settings(merchant_id TEXT PRIMARY KEY,revision INTEGER NOT NULL DEFAULT 0,discount_json TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS checkout_products(merchant_id TEXT NOT NULL,id TEXT NOT NULL,product_json TEXT NOT NULL,PRIMARY KEY(merchant_id,id));
 CREATE TABLE IF NOT EXISTS shipping_settings(merchant_id TEXT NOT NULL,mode TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 0,generic_office INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(merchant_id,mode));

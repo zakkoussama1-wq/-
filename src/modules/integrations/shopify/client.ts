@@ -52,6 +52,7 @@ export async function exchangeShopifyToken(
   if (!input.code || !input.clientId || !input.clientSecret)
     throw new Error("إعدادات تبادل الاعتماد ناقصة.");
   const r = await transport(`https://${shop}/admin/oauth/access_token`, {
+    redirect: "error",
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -77,9 +78,10 @@ export async function shopifyGraphql(
   shop = shopHostname(shop);
   if (!token) throw new Error("اعتماد المتجر غير متاح.");
   const response = await transport(
-    `https://${shop}/admin/api/2026-01/graphql.json`,
+    `https://${shop}/admin/api/2026-10/graphql.json`,
     {
       method: "POST",
+      redirect: "error",
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Access-Token": token,

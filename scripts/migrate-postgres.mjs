@@ -16,6 +16,8 @@ const files = [
       "form_settings",
       "shopify_states",
       "shopify_connections",
+      "shopify_session_metadata",
+      "shopify_webhook_receipts",
     ],
   },
   {
