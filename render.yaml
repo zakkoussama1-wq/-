@@ -17,7 +17,11 @@ services:
           name: dz-lead-postgres
           property: connectionString
       - key: SHOPIFY_SHOP
-        value: leadformarab.myshopify.com
+        value: h8vsym-t0.myshopify.com
+      - key: MEDIA_STORAGE_DRIVER
+        value: local
+      - key: MEDIA_STORAGE_PATH
+        value: /var/data/media
       - key: SHOPIFY_CLIENT_ID
         sync: false
       - key: SHOPIFY_CLIENT_SECRET
@@ -26,6 +30,10 @@ services:
         sync: false
       - key: INTEGRATIONS_ENCRYPTION_KEY
         sync: false
+    disk:
+      name: dz-lead-media
+      mountPath: /var/data
+      sizeGB: 1
 
 databases:
   - name: dz-lead-postgres

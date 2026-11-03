@@ -17,3 +17,15 @@ data/local-demo/
 test-results-local/
 
 data/media/
+
+# Only public geography input is allowed into the build context.
+data/**
+!data/geography/
+!data/geography/**
+**/.env*
+**/*.sqlite
+**/*.sqlite-*
+**/*.dump
+**/*.pem
+**/*.key
+.shopify/

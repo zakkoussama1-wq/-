@@ -13,7 +13,9 @@ try {
   if (!["postgres:", "postgresql:"].includes(db.protocol)) throw new Error();
   if (
     !["localhost", "127.0.0.1", "[::1]"].includes(db.hostname) &&
-    db.searchParams.get("sslmode") !== "verify-full"
+    ((db.searchParams.has("sslmode") &&
+      db.searchParams.get("sslmode") !== "verify-full") ||
+      ["false", "0"].includes(db.searchParams.get("ssl") ?? ""))
   )
     throw new Error();
 } catch {

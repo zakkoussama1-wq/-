@@ -9,6 +9,7 @@ const config: NextConfig = {
   outputFileTracingExcludes: {
     "*": [
       "./data/local-demo/**/*",
+      "./data/shopify-test/**/*",
       "./data/media/**/*",
       "./data/auth.sqlite*",
       "./data/checkout.sqlite*",
@@ -20,6 +21,7 @@ const config: NextConfig = {
       "./test-results*/**/*",
       "./.next-local*/**/*",
       "./biome.json",
+      "./.shopify/**/*",
     ],
   },
   outputFileTracingIncludes: {

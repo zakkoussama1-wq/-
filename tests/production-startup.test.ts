@@ -16,12 +16,21 @@ const fixture = {
 it("refuses missing services, demo bypass and remote databases without TLS without exposing secrets", () => {
   expect(run({}).status).toBe(1);
   expect(run(fixture).status).toBe(0);
+  // Render's injected connection string can omit SSL flags; the runtime pool
+  // always normalizes remote connections to verify-full before connecting.
+  expect(
+    run({
+      ...fixture,
+      DATABASE_URL: "postgresql://fixture:fixture@db.example.test/fixture",
+    }).status,
+  ).toBe(0);
   for (const changes of [
     { DZ_LOCAL_DEMO: "1" },
     { DZ_AUTH_TEST_BYPASS: "1" },
     { LOCAL_MERCHANT_ID: "other-tenant" },
     {
-      DATABASE_URL: "postgresql://fixture:fixture@remote.example.test/fixture",
+      DATABASE_URL:
+        "postgresql://fixture:fixture@remote.example.test/fixture?sslmode=disable",
     },
   ]) {
     const result = run({ ...fixture, ...changes });
