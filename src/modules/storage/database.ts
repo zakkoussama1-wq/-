@@ -1,33 +1,9 @@
+import { postgresConfiguration } from "../../../scripts/postgres-configuration.mjs";
+export { postgresConfiguration } from "../../../scripts/postgres-configuration.mjs";
 import { DatabaseSync } from "node:sqlite";
 import { resolve } from "node:path";
 import { Pool, type PoolClient } from "pg";
 let pool: Pool | undefined;
-export function postgresConfiguration(url: string) {
-  const parsed = new URL(url);
-  const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(
-    parsed.hostname,
-  );
-  if (!local) {
-    if (
-      ["disable", "no-verify"].includes(
-        parsed.searchParams.get("sslmode") ?? "",
-      ) ||
-      ["false", "0"].includes(parsed.searchParams.get("ssl") ?? "")
-    )
-      throw new Error("Remote PostgreSQL must verify TLS.");
-    // pg parses URL options after the ssl object. Normalize the URL too, so
-    // libpq compatibility flags cannot silently disable certificate checks.
-    parsed.searchParams.delete("ssl");
-    parsed.searchParams.set("sslmode", "verify-full");
-  }
-  return {
-    connectionString: parsed.toString(),
-    max: 10,
-    connectionTimeoutMillis: 5000,
-    statement_timeout: 10000,
-    ...(!local ? { ssl: { rejectUnauthorized: true } } : {}),
-  };
-}
 function postgresPool() {
   if (!pool) pool = new Pool(postgresConfiguration(process.env.DATABASE_URL!));
   return pool;

@@ -56,3 +56,15 @@ it("allows explicit bootstrap without Shopify but enforces database, encryption 
   ])
     expect(run({ ...bootstrap, ...changes }).status).toBe(1);
 });
+
+it("preflight accepts the same guarded Render transport as the runtime", () => {
+  const config = {
+    ...fixture,
+    RENDER: "true",
+    DATABASE_SSL_MODE: "render-internal",
+    DATABASE_URL: "postgresql://fixture:fixture@dpg-fixture-a/fixture",
+  };
+  expect(run(config).status).toBe(0);
+  expect(run({ ...config, RENDER: undefined }).status).toBe(1);
+  expect(run({ ...config, DATABASE_URL: fixture.DATABASE_URL }).status).toBe(1);
+});

@@ -1,3 +1,4 @@
+import { postgresConfiguration } from "./postgres-configuration.mjs";
 // Validate configuration without logging values or connecting to external services.
 const problems = [];
 const bootstrap = process.env.DZ_BOOTSTRAP_MODE === "1";
@@ -12,17 +13,11 @@ for (const name of [
 ])
   if (!process.env[name]) problems.push(`${name}: required`);
 try {
-  const db = new URL(process.env.DATABASE_URL ?? "");
-  if (!["postgres:", "postgresql:"].includes(db.protocol)) throw new Error();
-  if (
-    !["localhost", "127.0.0.1", "[::1]"].includes(db.hostname) &&
-    ((db.searchParams.has("sslmode") &&
-      db.searchParams.get("sslmode") !== "verify-full") ||
-      ["false", "0"].includes(db.searchParams.get("ssl") ?? ""))
-  )
-    throw new Error();
+  postgresConfiguration(process.env.DATABASE_URL ?? "");
 } catch {
-  problems.push("DATABASE_URL: PostgreSQL with verified remote TLS required");
+  problems.push(
+    "DATABASE_URL / DATABASE_SSL_MODE: invalid PostgreSQL transport configuration",
+  );
 }
 if (!bootstrap)
   try {

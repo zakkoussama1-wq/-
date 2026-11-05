@@ -17,8 +17,8 @@ Set these variables securely in Render (never put values in Git):
 - NODE_ENV=production
 - DZ_BOOTSTRAP_MODE=1
 - DATABASE_URL: connection string for existing `dz-lead-form-db-test` in Frankfurt.
-  Remote TLS certificate verification remains required. Do not use sslmode=disable
-  or disable certificate verification if connection fails.
+  For the short Render Internal Database URL use the private transport described
+  below. External connections retain verified TLS; never disable certificate checks.
 - INTEGRATIONS_ENCRYPTION_KEY: existing stable 64-character hexadecimal key.
   Preserve it across deploys; rotating it without migration loses access to secrets.
 - MEDIA_STORAGE_DRIVER=local
@@ -114,10 +114,9 @@ The schema is initialized once per process, without SQLite import or row updates
      access or overload. Check database status, connections and service events.
    - 28P01/28000: authentication; recopy current database credentials securely.
    - 3D000: database does not exist; use the selected database's connection string.
-   - TLS_UNSUPPORTED: selected endpoint does not offer TLS. Use a Render-supported
-     TLS endpoint (check the External Database URL if necessary), and configure
-     network access narrowly for the service as required by Render. Do not disable
-     TLS verification to work around this error.
+   - TLS_UNSUPPORTED: check whether this is the short Internal Database URL and
+     follow the private transport configuration below. For external endpoints,
+     use verified TLS and the supported endpoint; never disable certificate checks.
    - TLS certificate codes/TLS_VERIFICATION_FAILED: confirm hostname and trusted
      certificate chain; use the official endpoint. Do not use rejectUnauthorized=false.
    - 42501: selected role lacks schema/table permissions. Use the database owner
@@ -164,3 +163,57 @@ passwords and connection strings. Bootstrap protected routes still returned 503.
 Integration tests repeated permission failures 12 times without pool exhaustion,
 verified lock timeouts and successful retry, and preserved an existing row across
 schema reinitialization. No real Render database or Shopify data was accessed.
+
+## Render private PostgreSQL transport (self-signed certificate errors)
+
+The previous configuration forced TLS with certificate verification on every
+non-loopback host, including Render's short private database hostname. On an
+internal endpoint presenting a self-signed certificate this fails during connect
+with DEPTH_ZERO_SELF_SIGNED_CERT. Same-region placement alone does not select the
+internal URL, and that error alone cannot identify which URL is configured.
+
+For this Web Service and database in Frankfurt, check these settings yourself:
+
+1. Open the database's Connections panel and copy **Internal Database URL** into
+   the Web Service's DATABASE_URL securely. It should use a short hostname shaped
+   like dpg-<identifier>-a, not the external dotted hostname. Do not share the URL.
+2. Add DATABASE_SSL_MODE=render-internal. This explicitly selects PostgreSQL's
+   private-network non-TLS connection, rather than accepting an untrusted TLS
+   certificate. The app permits it only when Render supplies RENDER=true and the
+   URL has a short dpg-...-<letter> hostname and default PostgreSQL port 5432.
+   Do not manually set RENDER outside Render to bypass this guard.
+3. Use the internal URL as provided, without SSL query parameters. Remove any
+   appended ssl, sslmode, sslcert, sslkey, sslrootcert or uselibpqcompat options;
+   contradictory parameters are rejected rather than silently overriding them.
+4. Keep NODE_ENV=production, DZ_BOOTSTRAP_MODE=1, the existing encryption key,
+   media settings and /api/health unchanged. Do not set NODE_TLS_REJECT_UNAUTHORIZED=0
+   or disable verification globally. Manually deploy the latest main commit.
+5. Require health HTTP 200/ok=true. The app still returns 503 when connection,
+   permissions or schema readiness fail; private transport does not bypass these.
+
+If you intentionally use an External Database URL instead, leave
+DATABASE_SSL_MODE unset (or set verify-full). Verified TLS remains mandatory;
+use an endpoint whose certificate matches its hostname and chains to a trusted
+CA. Where Render supplies an official private CA, mount it securely and configure
+Node's NODE_EXTRA_CA_CERTS before process startup. Do not trust a certificate merely
+because it was obtained from the failed handshake. No custom CA was available or
+installed in this task.
+
+Production preflight, the normal pg pool and the health pg pool now share one
+transport policy. The internal override is explicit ssl=false on a narrowly
+validated private endpoint; no rejectUnauthorized:false setting is used. Tests
+inspect the real pg Client's effective SSL setting, including PGSSLMODE=require,
+and reject external hosts, non-Render runtimes and conflicting URL options.
+
+The agent cannot inspect the actual Render environment binding or connect to its
+real database. Render's documentation URL returned HTTP 403 in this environment;
+the endpoint and private-network choice must be confirmed in Render's Connections
+panel. No Render database records were modified by this task.
+
+Transport-fix verification: 207 tests passed with isolated PostgreSQL 18.6;
+Docker production build, lint, type checking and formatting passed. The production
+container with explicit guarded internal transport returned health 200 and passed
+its Docker health command; Bootstrap routes remained 503. A control container
+without the override returned health 503/TLS_UNSUPPORTED against the same non-TLS
+fixture, confirming no automatic TLS downgrade. The isolated test database had
+zero orders. These checks do not validate the actual Render URL or certificate.
