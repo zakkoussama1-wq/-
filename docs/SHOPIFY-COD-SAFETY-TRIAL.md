@@ -159,3 +159,43 @@ The settings remain `DZ_SHOPIFY_ORDER_SYNC=0`, `single_order`, a server-configur
 local UUID and `BYPASS`. This UI change does not prepare the real order during tests
 or alter any Render/Shopify/database settings. UI tests use synthetic orders and
 mocked endpoints; integration tests use isolated PostgreSQL and mocked Shopify.
+
+## Local read-only diagnostics for the pinned trial
+
+The trial panel adds an explicit diagnostics button for the owned order already
+bound in PostgreSQL, including immediately after successful preparation. The
+server endpoint is `GET /api/orders/shopify-sync/diagnostics?id=<local UUID>`.
+It authenticates the unexpired hashed merchant session, checks order ownership,
+active verified shop binding and the immutable trial row inside `BEGIN READ ONLY`.
+Other owned orders, foreign merchants, expired sessions and arbitrary IDs are
+rejected. No schema initialization/authentication-write helpers are called.
+
+The response contains job existence, an allowlisted state, dispatched 0/1 (or null
+if unavailable), attempts, an allowlisted error code and only a boolean for remote
+ID presence. It never returns that ID, the local customer snapshot or payload.
+Unknown stored error codes/states are replaced by fixed safe values. No dispatch,
+state, attempt, lease or binding is reset; missing jobs are not recreated.
+
+Credential diagnostics decrypt only in process memory and return boolean or null
+indicators for record/session presence, explicit offline provenance, token presence,
+key format, each decryption stage, shop binding, access expiry, and refresh presence
+and time validity. Missing/expired access, expired/missing refresh, bad key format,
+failed authenticated decryption and malformed session data have separate fixed
+reason codes. Null means not determined; a failed decryption does not imply an
+absent/expired token. Correct key format does not establish that it is the right
+key for the stored records. Refresh validity means local timestamps only, not
+proof that Shopify would accept it. A non-expiring token has expired=false.
+
+There is no network call, OAuth flow, refresh, repair, retry or mutation. Responses
+report `readOnly:true, networkChecked:false` and no-store. Neither the route nor
+the decoder logs credentials or exception messages. No token, key, ciphertext,
+customer field, URL or identifier is returned in the diagnostic body. The UI uses
+validated scalar fields, fixed translated messages and safe reason codes only;
+it never renders raw server errors or extra response properties. Local success
+is not evidence of live token acceptance or protected-data approval.
+
+Regression tests exercise enforced connection-level read-only transactions through
+the production proxy/handler, tenant and pinned-order isolation, unchanged order /
+job / credential snapshots, no remote calls, uncertain dispatch markers, missing
+legacy jobs, redaction, wrong/missing keys, corrupted metadata, missing credentials,
+online/wrong-shop sessions and independent access/refresh expiry.

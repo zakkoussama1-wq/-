@@ -276,6 +276,11 @@ export async function listOrders(merchant: string) {
       .prepare("SELECT * FROM shopify_order_outbox WHERE merchant_id=?")
       .all(merchant);
     const byId = new Map(jobs.map((row) => [String(row.order_id), row]));
+    const trial = await db
+      .prepare(
+        "SELECT order_id FROM shopify_order_trial WHERE singleton=1 AND merchant_id=?",
+      )
+      .get(merchant);
     return (
       await db
         .prepare(
@@ -285,7 +290,13 @@ export async function listOrders(merchant: string) {
     ).map((row) => {
       const order = decode(row);
       return order.catalogSource === "shopify"
-        ? { ...order, shopifySync: syncView(byId.get(order.id)) }
+        ? {
+            ...order,
+            shopifySync: {
+              ...syncView(byId.get(order.id)),
+              trialDiagnosticsAllowed: trial?.order_id === order.id,
+            },
+          }
         : order;
     });
   } finally {

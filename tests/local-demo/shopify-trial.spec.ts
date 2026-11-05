@@ -153,7 +153,7 @@ test("prepares with the merchant cookie and checks readiness without enqueueing 
   expect(prepared).toBe(1);
   expect(read).toBe(1);
   expect(forbidden).toBe(0);
-  await expect(panel.getByRole("button")).toHaveCount(2);
+  await expect(panel.getByRole("button")).toHaveCount(3);
 });
 test("hides preparation for other orders and clears the previous order's report", async ({
   page,
@@ -240,4 +240,122 @@ test("shows safe session/configuration/connection errors and rejects malformed r
       panel.getByRole("link", { name: "تسجيل الدخول بحساب التاجر" }),
     ).toHaveCount(next === 401 ? 1 : 0);
   }
+});
+
+test("diagnoses the pinned order with safe booleans, keeps state and hides diagnostics for other orders", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: "dz_session",
+      value: "a".repeat(64),
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Strict",
+    },
+  ]);
+  await page.route("**/api/orders", (r) =>
+    r.fulfill({
+      json: {
+        orders: [
+          {
+            ...order(),
+            shopifySync: {
+              ...order().shopifySync,
+              trialDiagnosticsAllowed: true,
+            },
+          },
+          order(otherId, false),
+        ],
+      },
+    }),
+  );
+  const offline = {
+    connectionPresent: true,
+    sessionMetadataPresent: true,
+    encryptionKeyFormatValid: true,
+    connectionTokenPresent: true,
+    accessTokenPresent: true,
+    offlineSession: true,
+    connectionDecryptionSucceeded: true,
+    sessionDecryptionSucceeded: true,
+    decryptionSucceeded: true,
+    shopMatches: true,
+    accessTokenExpired: true,
+    refreshTokenPresent: true,
+    refreshTokenTimeValid: true,
+    reasons: ["ACCESS_TOKEN_EXPIRED"],
+  };
+  let missing = false,
+    requests = 0;
+  await page.route("**/api/orders/shopify-sync/diagnostics?*", async (r) => {
+    requests++;
+    expect(r.request().method()).toBe("GET");
+    expect(new URL(r.request().url()).searchParams.get("id")).toBe(id);
+    const headers = await r.request().allHeaders();
+    expect(headers.cookie).toContain("dz_session=");
+    expect(headers.authorization).toBeUndefined();
+    await r.fulfill({
+      json: {
+        readOnly: true,
+        networkChecked: false,
+        accessToken: "private-fixture-token",
+        job: missing
+          ? {
+              exists: false,
+              state: null,
+              dispatched: null,
+              attempts: null,
+              errorCode: "",
+              hasShopifyOrderId: false,
+            }
+          : {
+              exists: true,
+              state: "uncertain",
+              dispatched: 1,
+              attempts: 3,
+              errorCode: "AWAITING_REMOTE_RECONCILIATION",
+              hasShopifyOrderId: false,
+              shopifyOrderId: "gid://shopify/Order/999",
+            },
+        offline: { ...offline, encryptionKey: "private-fixture-key" },
+      },
+    });
+  });
+  const panel = await open(page);
+  const button = panel.getByRole("button", {
+    name: "تشخيص التجربة للقراءة فقط",
+    exact: true,
+  });
+  await button.click();
+  const result = panel.getByRole("region", {
+    name: "تشخيص التجربة للقراءة فقط",
+  });
+  await expect(result.getByRole("status")).toContainText("دون تعديل أو اتصال");
+  await expect(result).toContainText("uncertain");
+  await expect(result).toContainText("لا تمسح dispatched");
+  await expect(result).toContainText("انتهى Access Token");
+  await expect(result).toContainText("AWAITING_REMOTE_RECONCILIATION");
+  await expect(result).not.toContainText("private-fixture");
+  await expect(result).not.toContainText("gid://shopify/Order/999");
+  missing = true;
+  await button.click();
+  await expect(result).toContainText("لا توجد مهمة");
+  await expect(result).not.toContainText("AWAITING_REMOTE_RECONCILIATION");
+  await page
+    .getByRole("button", { name: "إغلاق النافذة", exact: true })
+    .click();
+  await page
+    .getByTestId(`order-row-${otherId}`)
+    .getByRole("button", { name: "تفاصيل الطلب", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "تشخيص التجربة للقراءة فقط",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  expect(requests).toBe(2);
 });

@@ -14,6 +14,7 @@ export interface ShopifySyncView {
   attempts: number;
   errorCode: string;
   trialPreparationAllowed?: boolean;
+  trialDiagnosticsAllowed?: boolean;
 }
 export const syncLabels: Record<ShopifySyncView["state"], string> = {
   not_queued: "لم تُجهّز المزامنة",

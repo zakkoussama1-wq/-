@@ -1,6 +1,21 @@
 import { z } from "zod";
 // Only fixed, translated text and allowlisted machine codes are rendered.
 const copy: Record<string, readonly [string, string, string]> = {
+  DIAGNOSTIC_ORDER_REQUIRED: [
+    "معرّف الطلب مطلوب للتشخيص.",
+    "Order ID required for diagnostics.",
+    "Identifiant de commande requis.",
+  ],
+  DIAGNOSTIC_TRIAL_NOT_BOUND: [
+    "التشخيص متاح للطلب التجريبي المثبت فقط.",
+    "Diagnostics are restricted to the bound trial order.",
+    "Diagnostic réservé à la commande d’essai liée.",
+  ],
+  DIAGNOSTIC_STORAGE_UNAVAILABLE: [
+    "تعذرت قراءة بيانات التشخيص؛ لم تُعدّل قاعدة البيانات.",
+    "Diagnostic reads unavailable; database unchanged.",
+    "Lecture du diagnostic indisponible ; base inchangée.",
+  ],
   title: [
     "تجربة Shopify للطلب",
     "Shopify order trial",

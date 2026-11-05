@@ -1,6 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../language-provider";
+import {
+  diagnosticReportSchema,
+  type DiagnosticReport,
+} from "@/modules/orders/shopify/diagnostic-contract";
+import {
+  diagnosticText,
+  jobExplanation,
+  offlineFields,
+} from "@/modules/orders/shopify/diagnostic-ui";
+import { syncLabels } from "@/modules/orders/shopify/types";
 import { Button } from "../ui/button";
 import {
   safeTrialCode,
@@ -11,17 +21,23 @@ import {
 export function ShopifyTrialPanel({
   orderId,
   canPrepare,
+  canDiagnose,
   disabled,
   onBusyChange,
 }: {
   orderId: string;
   canPrepare: boolean;
+  canDiagnose: boolean;
   disabled: boolean;
   onBusyChange: (busy: boolean) => void;
 }) {
-  const { language } = useLanguage();
-  const [pending, setPending] = useState<"prepare" | "readiness" | null>(null);
+  const { language, t } = useLanguage();
+  const [pending, setPending] = useState<
+    "prepare" | "readiness" | "diagnostics" | null
+  >(null);
   const [prepared, setPrepared] = useState(false);
+  const [boundHere, setBoundHere] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticReport | null>(null);
   const [report, setReport] = useState<TrialReport | null>(null);
   const [error, setError] = useState("");
   const active = useRef<AbortController | null>(null);
@@ -31,8 +47,13 @@ export function ShopifyTrialPanel({
     },
     [],
   );
-  async function run(action: "prepare" | "readiness") {
-    if (disabled || active.current || (action === "prepare" && !canPrepare))
+  async function run(action: "prepare" | "readiness" | "diagnostics") {
+    if (
+      disabled ||
+      active.current ||
+      (action === "prepare" && !canPrepare) ||
+      (action === "diagnostics" && !canDiagnose && !boundHere)
+    )
       return;
     const controller = new AbortController();
     active.current = controller;
@@ -40,12 +61,13 @@ export function ShopifyTrialPanel({
     onBusyChange(true);
     setError("");
     setReport(null);
+    setDiagnostics(null);
     setPrepared(false);
     try {
       const response = await fetch(
         action === "prepare"
           ? "/api/orders/shopify-sync/trial"
-          : `/api/orders/shopify-sync/readiness?id=${encodeURIComponent(orderId)}`,
+          : `/api/orders/shopify-sync/${action}?id=${encodeURIComponent(orderId)}`,
         {
           method: action === "prepare" ? "POST" : "GET",
           credentials: "same-origin",
@@ -91,6 +113,14 @@ export function ShopifyTrialPanel({
           return;
         }
         setPrepared(true);
+        setBoundHere(true);
+      } else if (action === "diagnostics") {
+        const parsed = diagnosticReportSchema.safeParse(data);
+        if (!parsed.success) {
+          setError("UNKNOWN_DIAGNOSTIC");
+          return;
+        }
+        setDiagnostics(parsed.data);
       } else {
         const parsed = trialReportSchema.safeParse(data);
         if (!parsed.success) {
@@ -106,6 +136,12 @@ export function ShopifyTrialPanel({
       if (!controller.signal.aborted) setPending(null);
       onBusyChange(false);
     }
+  }
+  function trialTextForState(state: string) {
+    const label = syncLabels[state as keyof typeof syncLabels];
+    return label
+      ? `${t(label)} (${state})`
+      : diagnosticText("unknown", language);
   }
   return (
     <section
@@ -140,6 +176,19 @@ export function ShopifyTrialPanel({
             language,
           )}
         </Button>
+        {(canDiagnose || boundHere) && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={disabled || pending !== null}
+            onClick={() => void run("diagnostics")}
+          >
+            {diagnosticText(
+              pending === "diagnostics" ? "diagnosing" : "diagnose",
+              language,
+            )}
+          </Button>
+        )}
       </div>
       {prepared && <p role="status">{trialText("prepared", language)}</p>}
       {error && (
@@ -151,6 +200,81 @@ export function ShopifyTrialPanel({
             </a>
           )}
         </div>
+      )}
+      {diagnostics && (
+        <section
+          className="space-y-3"
+          aria-label={diagnosticText("diagnose", language)}
+        >
+          <p role="status">{diagnosticText("completed", language)}</p>
+          <h4 className="font-bold">{diagnosticText("job", language)}</h4>
+          <dl className="space-y-2">
+            {(
+              [
+                "exists",
+                "state",
+                "dispatched",
+                "attempts",
+                "errorCode",
+                "hasShopifyOrderId",
+              ] as const
+            ).map((key) => {
+              const value = diagnostics.job[key];
+              const label =
+                value === null
+                  ? diagnosticText("unknown", language)
+                  : typeof value === "boolean"
+                    ? diagnosticText(value ? "yes" : "no", language)
+                    : key === "state"
+                      ? value === "unknown"
+                        ? diagnosticText("unknown", language)
+                        : trialTextForState(String(value))
+                      : value === ""
+                        ? diagnosticText("none", language)
+                        : String(value);
+              return (
+                <div key={key}>
+                  <dt className="font-semibold">
+                    {diagnosticText(key, language)}
+                  </dt>
+                  <dd className="break-all">{label}</dd>
+                </div>
+              );
+            })}
+          </dl>
+          <p>{diagnosticText(jobExplanation(diagnostics.job), language)}</p>
+          <h4 className="font-bold">
+            {diagnosticText("credentials", language)}
+          </h4>
+          <dl className="space-y-2">
+            {offlineFields.map((key) => (
+              <div key={key}>
+                <dt className="font-semibold">
+                  {diagnosticText(key, language)}
+                </dt>
+                <dd>
+                  {diagnosticText(
+                    diagnostics.offline[key] === null
+                      ? "unknown"
+                      : diagnostics.offline[key]
+                        ? "yes"
+                        : "no",
+                    language,
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <ul className="list-disc space-y-2 ps-4">
+            {diagnostics.offline.reasons.map((reason) => (
+              <li key={reason}>
+                {diagnosticText(reason, language)}{" "}
+                <code dir="ltr">{reason}</code>
+              </li>
+            ))}
+          </ul>
+          <p>{diagnosticText("caveat", language)}</p>
+        </section>
       )}
       {report && (
         <div className="space-y-3">

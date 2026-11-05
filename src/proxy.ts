@@ -16,7 +16,13 @@ export async function proxy(request: NextRequest) {
   }
   // This handler authenticates the same hashed merchant session in a PostgreSQL
   // READ ONLY transaction. Avoid schema-initializing auth helpers on this probe.
-  if (path === "/api/orders/shopify-sync/readiness") return NextResponse.next();
+  if (
+    [
+      "/api/orders/shopify-sync/readiness",
+      "/api/orders/shopify-sync/diagnostics",
+    ].includes(path)
+  )
+    return NextResponse.next();
   if (process.env.NODE_ENV === "production") {
     const bootstrap = [
       "/api/auth",

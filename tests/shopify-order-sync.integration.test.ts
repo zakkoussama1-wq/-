@@ -1,3 +1,6 @@
+import { GET as diagnosticsRoute } from "../src/app/api/orders/shopify-sync/diagnostics/route";
+import { NextRequest } from "next/server";
+import { proxy } from "../src/proxy";
 import { GET as ordersRoute } from "../src/app/api/orders/route";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -868,6 +871,166 @@ describe.skipIf(!base)(
             !o.shopifySync.trialPreparationAllowed,
         ),
       ).toBe(true);
+      expect(creates).toBe(0);
+    });
+
+    it("diagnoses only the pinned owned order in enforced READ ONLY mode with no remote calls or writes", async () => {
+      const selected = await saved();
+      const other = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", selected.id);
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC", "0");
+      const request = (id = selected.id, cookie = token, extra = "") =>
+        new Request(
+          `https://app.example.test/api/orders/shopify-sync/diagnostics?id=${id}${extra}`,
+          { headers: { cookie: `dz_session=${cookie}` } },
+        );
+      expect((await diagnosticsRoute(request())).status).toBe(409);
+      await prepareOrderTrial(merchant, selected.id);
+      await admin.query(
+        `UPDATE ${schema}.shopify_order_outbox SET state='uncertain',dispatched=1,attempts=3,error_code='AWAITING_REMOTE_RECONCILIATION',shopify_order_id='gid://shopify/Order/999' WHERE order_id=$1`,
+        [selected.id],
+      );
+      const orders = await (
+        await ordersRoute(
+          new Request("https://app.example.test/api/orders", {
+            headers: { cookie: `dz_session=${token}` },
+          }),
+        )
+      ).json();
+      expect(
+        orders.orders.find((o: { id: string }) => o.id === selected.id)
+          .shopifySync.trialDiagnosticsAllowed,
+      ).toBe(true);
+      expect(
+        orders.orders.find((o: { id: string }) => o.id === other.id).shopifySync
+          .trialDiagnosticsAllowed,
+      ).toBe(false);
+      const snapshot = async () =>
+        (
+          await admin.query(
+            `SELECT (SELECT json_agg(x ORDER BY id) FROM ${schema}.orders x) AS orders,(SELECT json_agg(x ORDER BY order_id) FROM ${schema}.shopify_order_outbox x) AS jobs,(SELECT json_agg(x) FROM ${schema}.shopify_connections x) AS credentials,(SELECT json_agg(x) FROM ${schema}.shopify_session_metadata x) AS metadata,(SELECT json_agg(x) FROM ${schema}.shopify_order_trial x) AS trial`,
+          )
+        ).rows;
+      const before = await snapshot();
+      const calls = vi.mocked(fetch).mock.calls.length;
+      const readonlyURL = new URL(process.env.DATABASE_URL!);
+      readonlyURL.searchParams.set(
+        "options",
+        `-c search_path=${schema} -c default_transaction_read_only=on`,
+      );
+      vi.stubEnv("DATABASE_URL", readonlyURL.toString());
+      expect((await proxy(new NextRequest(request()))).status).toBe(200);
+      expect((await diagnosticsRoute(request(selected.id, ""))).status).toBe(
+        401,
+      );
+      expect(
+        (
+          await diagnosticsRoute(
+            request(selected.id, token, "&store=other-tenant"),
+          )
+        ).status,
+      ).toBe(403);
+      expect((await diagnosticsRoute(request(other.id))).status).toBe(409);
+      const response = await diagnosticsRoute(request());
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      const report = await response.json();
+      expect(report).toMatchObject({
+        readOnly: true,
+        networkChecked: false,
+        job: {
+          exists: true,
+          state: "uncertain",
+          dispatched: 1,
+          attempts: 3,
+          errorCode: "AWAITING_REMOTE_RECONCILIATION",
+          hasShopifyOrderId: true,
+        },
+        offline: { decryptionSucceeded: true, offlineSession: true },
+      });
+      expect(JSON.stringify(report)).not.toMatch(
+        /fixture-token|fixture-refresh|encrypted_|gid:\/\/shopify\/Order|customer|phone|email/,
+      );
+      expect(vi.mocked(fetch).mock.calls.length).toBe(calls);
+      expect(await snapshot()).toEqual(before);
+      expect(creates).toBe(0);
+      const key = process.env.INTEGRATIONS_ENCRYPTION_KEY!;
+      vi.stubEnv(
+        "INTEGRATIONS_ENCRYPTION_KEY",
+        randomBytes(32).toString("hex"),
+      );
+      const badKey = await (await diagnosticsRoute(request())).json();
+      expect(badKey.offline).toMatchObject({
+        encryptionKeyFormatValid: true,
+        decryptionSucceeded: false,
+        accessTokenPresent: null,
+        accessTokenExpired: null,
+      });
+      expect(await snapshot()).toEqual(before);
+      vi.stubEnv("INTEGRATIONS_ENCRYPTION_KEY", key);
+    });
+    it("rejects a different verified merchant, handles a missing job and sanitizes stored errors", async () => {
+      const selected = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", selected.id);
+      await prepareOrderTrial(merchant, selected.id);
+      const otherToken = await accountLogin(
+        "other-diagnostic@example.test",
+        "fixture-password",
+        "Other diagnostic",
+      );
+      const otherMerchant = (await sessionMerchant(otherToken))!;
+      await saveConnection(
+        otherMerchant,
+        "other-diagnostic.myshopify.com",
+        "other-diagnostic-token",
+        "read_products",
+        new Session({
+          id: "offline_other-diagnostic.myshopify.com",
+          shop: "other-diagnostic.myshopify.com",
+          state: "",
+          isOnline: false,
+          accessToken: "other-diagnostic-token",
+        }),
+        "gid://shopify/Shop/88",
+      );
+      const req = (cookie = token) =>
+        new Request(
+          `https://app.example.test/api/orders/shopify-sync/diagnostics?id=${selected.id}`,
+          { headers: { cookie: `dz_session=${cookie}` } },
+        );
+      expect((await diagnosticsRoute(req(otherToken))).status).toBe(404);
+      await admin.query(
+        `UPDATE ${schema}.shopify_order_outbox SET error_code='PRIVATE_ACCESS_TOKEN' WHERE order_id=$1`,
+        [selected.id],
+      );
+      const sanitized = await (await diagnosticsRoute(req())).json();
+      expect(sanitized.job.errorCode).toBe("UNKNOWN_ERROR_CODE");
+      expect(JSON.stringify(sanitized)).not.toContain("PRIVATE_ACCESS_TOKEN");
+      // Only this disposable fixture job is removed to exercise legacy orders without outbox rows.
+      await admin.query(
+        `DELETE FROM ${schema}.shopify_order_outbox WHERE order_id=$1`,
+        [selected.id],
+      );
+      const calls = vi.mocked(fetch).mock.calls.length;
+      const missing = await (await diagnosticsRoute(req())).json();
+      expect(missing.job).toEqual({
+        exists: false,
+        state: null,
+        dispatched: null,
+        attempts: null,
+        errorCode: "",
+        hasShopifyOrderId: false,
+      });
+      expect(
+        (
+          await admin.query(
+            `SELECT count(*)::integer AS count FROM ${schema}.shopify_order_outbox`,
+          )
+        ).rows[0].count,
+      ).toBe(0);
+      expect(vi.mocked(fetch).mock.calls.length).toBe(calls);
       expect(creates).toBe(0);
     });
     it("readiness authenticates in READ ONLY transactions and sends queries only, without changing rows", async () => {

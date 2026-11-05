@@ -473,6 +473,9 @@ export function OrdersDashboard({
                       canPrepare={
                         selected.shopifySync.trialPreparationAllowed === true
                       }
+                      canDiagnose={
+                        selected.shopifySync.trialDiagnosticsAllowed === true
+                      }
                       disabled={!!busy}
                       onBusyChange={(value) =>
                         setBusy(value ? selected.id : null)

@@ -362,3 +362,123 @@ export function inspectOfflineCredential(
     offline: true,
   };
 }
+
+/** Local, pure diagnostic: return booleans/allowlisted reasons only; never refresh or log. */
+export function diagnoseOfflineCredential(
+  merchant: string,
+  shop: string,
+  encryptedToken: string | null,
+  encryptedSession: string | null,
+): import("../../orders/shopify/diagnostic-contract").OfflineDiagnostic {
+  const result: import("../../orders/shopify/diagnostic-contract").OfflineDiagnostic =
+    {
+      connectionPresent: encryptedToken !== null,
+      sessionMetadataPresent: !!encryptedSession,
+      encryptionKeyFormatValid: /^[a-f0-9]{64}$/i.test(
+        process.env.INTEGRATIONS_ENCRYPTION_KEY ?? "",
+      ),
+      connectionTokenPresent: null,
+      accessTokenPresent: null,
+      offlineSession: null,
+      connectionDecryptionSucceeded: null,
+      sessionDecryptionSucceeded: null,
+      decryptionSucceeded: null,
+      shopMatches: null,
+      accessTokenExpired: null,
+      refreshTokenPresent: null,
+      refreshTokenTimeValid: null,
+      reasons: [],
+    };
+  if (encryptedToken === null) result.reasons.push("CONNECTION_MISSING");
+  else if (!encryptedToken) result.reasons.push("CONNECTION_TOKEN_MISSING");
+  if (!encryptedSession) result.reasons.push("SESSION_METADATA_MISSING");
+  if (!result.encryptionKeyFormatValid) {
+    result.reasons.push("ENCRYPTION_KEY_INVALID");
+    return result;
+  }
+  if (encryptedToken) {
+    try {
+      const plaintext = unseal(merchant, encryptedToken);
+      result.connectionDecryptionSucceeded = true;
+      result.connectionTokenPresent = !!plaintext;
+      if (!plaintext) result.reasons.push("CONNECTION_TOKEN_MISSING");
+    } catch {
+      result.connectionDecryptionSucceeded = false;
+      result.reasons.push("TOKEN_DECRYPTION_FAILED");
+    }
+  }
+  if (encryptedSession) {
+    let plaintext: string;
+    try {
+      plaintext = unseal(merchant, encryptedSession);
+      result.sessionDecryptionSucceeded = true;
+    } catch {
+      result.sessionDecryptionSucceeded = false;
+      result.reasons.push("SESSION_DECRYPTION_FAILED");
+      plaintext = "";
+    }
+    if (result.sessionDecryptionSucceeded) {
+      try {
+        const properties: unknown = JSON.parse(plaintext);
+        if (
+          !Array.isArray(properties) ||
+          !properties.every(
+            (p) =>
+              Array.isArray(p) &&
+              p.length === 2 &&
+              typeof p[0] === "string" &&
+              (p[1] === null ||
+                ["string", "number", "boolean"].includes(typeof p[1])),
+          )
+        )
+          throw new Error();
+        const session = Session.fromPropertyArray(properties);
+        if (
+          typeof session.shop !== "string" ||
+          !session.shop ||
+          !properties.some((p) => p[0].toLowerCase() === "isonline") ||
+          typeof session.isOnline !== "boolean" ||
+          (session.accessToken !== undefined &&
+            typeof session.accessToken !== "string") ||
+          (session.expires && !Number.isFinite(session.expires.getTime())) ||
+          (session.refreshTokenExpires &&
+            !Number.isFinite(session.refreshTokenExpires.getTime()))
+        )
+          throw new Error();
+        result.offlineSession = session.isOnline === false;
+        result.accessTokenPresent = !!session.accessToken;
+        result.shopMatches = session.shop === shop;
+        result.accessTokenExpired = session.accessToken
+          ? session.isExpired()
+          : null;
+        result.refreshTokenPresent = !!session.refreshToken;
+        result.refreshTokenTimeValid =
+          !!session.refreshToken &&
+          !!session.refreshTokenExpires &&
+          session.refreshTokenExpires.getTime() > Date.now();
+        if (!result.offlineSession)
+          result.reasons.push("OFFLINE_SESSION_REQUIRED");
+        if (!result.accessTokenPresent)
+          result.reasons.push("ACCESS_TOKEN_MISSING");
+        if (!result.shopMatches) result.reasons.push("SHOP_BINDING_MISMATCH");
+        if (result.accessTokenExpired)
+          result.reasons.push("ACCESS_TOKEN_EXPIRED");
+        if (!result.refreshTokenTimeValid)
+          result.reasons.push("REFRESH_TOKEN_UNUSABLE");
+      } catch {
+        result.reasons.push("SESSION_METADATA_INVALID");
+      }
+    }
+  }
+  result.decryptionSucceeded =
+    result.connectionDecryptionSucceeded === false ||
+    result.sessionDecryptionSucceeded === false
+      ? false
+      : result.connectionDecryptionSucceeded === true &&
+          result.sessionDecryptionSucceeded === true
+        ? true
+        : null;
+  if (!result.reasons.length)
+    result.reasons.push("LOCAL_CREDENTIAL_CHECKS_PASSED");
+  return result;
+}
