@@ -2961,4 +2961,66 @@ export const messages: Record<string, { en: string; fr: string }> = {
     en: "Verify live connection",
     fr: "Vérifier la connexion réelle",
   },
+  "لم تُجهّز المزامنة": {
+    en: "Not queued for sync",
+    fr: "Synchronisation non préparée",
+  },
+  "بانتظار المزامنة": {
+    en: "Waiting for sync",
+    fr: "En attente de synchronisation",
+  },
+  "جارٍ المزامنة": { en: "Sync in progress", fr: "Synchronisation en cours" },
+  "تعذرت المزامنة مؤقتًا": {
+    en: "Sync temporarily unavailable",
+    fr: "Synchronisation temporairement indisponible",
+  },
+  "يلزم إعادة تفويض Shopify": {
+    en: "Shopify authorization required",
+    fr: "Autorisation Shopify requise",
+  },
+  "نتيجة غير مؤكدة؛ جارٍ التحقق دون إنشاء جديد": {
+    en: "Uncertain result; reconciling without creating again",
+    fr: "Résultat incertain ; vérification sans nouvelle création",
+  },
+  "تحتاج المزامنة إلى مراجعة": {
+    en: "Sync needs review",
+    fr: "Synchronisation à vérifier",
+  },
+  "تم إنشاء طلب Shopify غير المدفوع": {
+    en: "Unpaid Shopify order created",
+    fr: "Commande Shopify non payée créée",
+  },
+  "أوقفت المزامنة للطلب الملغى": {
+    en: "Sync stopped for cancelled order",
+    fr: "Synchronisation arrêtée pour la commande annulée",
+  },
+  "مزامنة طلب Shopify": {
+    en: "Shopify order sync",
+    fr: "Synchronisation de commande Shopify",
+  },
+  "المزامنة معطلة؛ الطلب المحلي محفوظ.": {
+    en: "Sync is disabled; the local order is saved.",
+    fr: "Synchronisation désactivée ; la commande locale est enregistrée.",
+  },
+  "رمز التشخيص": { en: "Diagnostic code", fr: "Code de diagnostic" },
+  "التحقق من نتيجة Shopify دون إنشاء جديد": {
+    en: "Check Shopify result without creating again",
+    fr: "Vérifier le résultat Shopify sans recréer",
+  },
+  "إعادة محاولة مزامنة Shopify": {
+    en: "Retry Shopify sync",
+    fr: "Réessayer la synchronisation Shopify",
+  },
+  "تعذرت إعادة محاولة المزامنة.": {
+    en: "Could not retry sync.",
+    fr: "Impossible de relancer la synchronisation.",
+  },
+  "حُفظت مهمة المزامنة؛ الطلب المحلي محفوظ.": {
+    en: "Sync job saved; the local order is saved.",
+    fr: "Tâche de synchronisation enregistrée ; la commande locale est conservée.",
+  },
+  "تحديث حالة المزامنة": {
+    en: "Refresh sync status",
+    fr: "Actualiser la synchronisation",
+  },
 };

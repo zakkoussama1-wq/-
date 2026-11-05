@@ -11,7 +11,7 @@ import {
   integrationsDisabled,
   shopifyConfiguration,
   shopifySdk,
-  SHOPIFY_SCOPES,
+  requestedShopifyScopes,
 } from "@/modules/integrations/shopify/sdk";
 import {
   registerUninstallWebhook,
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       !session.accessToken ||
       session.shop !== shop ||
       session.isOnline ||
-      !session.isScopeIncluded(SHOPIFY_SCOPES) ||
+      !session.isScopeIncluded(requestedShopifyScopes()) ||
       !session.expires ||
       !session.refreshToken ||
       !session.refreshTokenExpires

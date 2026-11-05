@@ -192,7 +192,10 @@ export async function connectionStatus(merchant: string) {
     await db.close();
   }
 }
-export async function connectionCredential(merchant: string) {
+export async function connectionCredential(
+  merchant: string,
+  requireOffline = false,
+) {
   const db = await dbOpen();
   try {
     await db.exec("BEGIN IMMEDIATE");
@@ -209,6 +212,9 @@ export async function connectionCredential(merchant: string) {
         "SELECT encrypted_session FROM shopify_session_metadata WHERE merchant_id=?",
       )
       .get(merchant);
+    let grantedScope = "";
+    if (requireOffline && !metadata)
+      throw new Error("Verified offline session required");
     if (metadata) {
       let session = Session.fromPropertyArray(
         JSON.parse(unseal(merchant, String(metadata.encrypted_session))),
@@ -255,12 +261,17 @@ export async function connectionCredential(merchant: string) {
             merchant,
           );
       }
+      if (requireOffline && session.isExpired())
+        throw new Error("Offline session expired");
+      grantedScope = session.scope ?? "";
       accessToken = session.accessToken ?? "";
     }
     await db.exec("COMMIT");
     return {
       shop: String(row.shop),
       accessToken,
+      offline: !!metadata,
+      scopes: grantedScope.split(/[, ]+/).filter(Boolean),
     };
   } catch (error) {
     await db.exec("ROLLBACK");

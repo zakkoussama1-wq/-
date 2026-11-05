@@ -82,7 +82,7 @@ export const config = {
     "/dashboard",
     "/api/shipping/:path*",
     "/api/checkout/discount",
-    "/api/orders",
+    "/api/orders/:path*",
     "/api/form-config",
     "/api/products/:path*",
     "/api/advertising/:path*",

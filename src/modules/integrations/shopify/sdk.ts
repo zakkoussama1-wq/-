@@ -15,6 +15,12 @@ setAbstractFetchFunc((url, options) =>
 
 export const SHOPIFY_API_VERSION = ApiVersion.October26;
 export const SHOPIFY_SCOPES = ["read_products"];
+// Product access remains valid for older installations; order access is optional.
+export function requestedShopifyScopes() {
+  return process.env.DZ_SHOPIFY_ORDER_SYNC === "1"
+    ? [...SHOPIFY_SCOPES, "write_orders"]
+    : SHOPIFY_SCOPES;
+}
 export const CALLBACK_PATH = "/api/integrations/shopify/callback";
 
 export function shopifyConfiguration() {
@@ -47,7 +53,7 @@ export function shopifySdk() {
     hostName: redirect.host,
     hostScheme: "https",
     apiVersion: SHOPIFY_API_VERSION,
-    scopes: SHOPIFY_SCOPES,
+    scopes: requestedShopifyScopes(),
     isEmbeddedApp: false,
     // Dev Dashboard distribution choice is separate from admin-created custom apps.
     isCustomStoreApp: false,

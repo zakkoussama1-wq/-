@@ -1,3 +1,5 @@
+import { enqueueOrder, outboxSchema, syncView } from "./shopify/outbox";
+import type { ShopifySyncView } from "./shopify/types";
 import {
   readShopifyCatalog,
   shopifyCatalogMode,
@@ -48,6 +50,7 @@ export interface StoredOrder {
   variantName: string;
   reservedStock?: boolean;
   catalogSource?: "shopify";
+  shopifySync?: ShopifySyncView;
   productSku?: string;
   variantSku?: string;
   productImageUrl?: string;
@@ -64,6 +67,7 @@ async function dbOpen() {
   await db.exec(
     `PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,key TEXT NOT NULL,hash TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,data TEXT NOT NULL,UNIQUE(merchant_id,key)); CREATE INDEX IF NOT EXISTS order_tenant_date ON orders(merchant_id,created_at); CREATE TABLE IF NOT EXISTS submission_limits(merchant_id TEXT NOT NULL,phone_hash TEXT NOT NULL,bucket INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(merchant_id,phone_hash,bucket));`,
   );
+  await db.exec(outboxSchema);
   if (process.env.NODE_ENV !== "production") await ensureSimulationTables(db);
   return db;
 }
@@ -248,6 +252,7 @@ export async function createOrder(
         order.createdAt,
         JSON.stringify(order),
       );
+    await enqueueOrder(db, order);
     await db
       .prepare(
         "INSERT INTO submission_limits VALUES(?,?,?,1) ON CONFLICT(merchant_id,phone_hash,bucket) DO UPDATE SET count=submission_limits.count+1",
@@ -267,13 +272,22 @@ export async function createOrder(
 export async function listOrders(merchant: string) {
   const db = await dbOpen();
   try {
+    const jobs = await db
+      .prepare("SELECT * FROM shopify_order_outbox WHERE merchant_id=?")
+      .all(merchant);
+    const byId = new Map(jobs.map((row) => [String(row.order_id), row]));
     return (
       await db
         .prepare(
           "SELECT * FROM orders WHERE merchant_id=? ORDER BY created_at DESC,id",
         )
         .all(merchant)
-    ).map(decode);
+    ).map((row) => {
+      const order = decode(row);
+      return order.catalogSource === "shopify"
+        ? { ...order, shopifySync: syncView(byId.get(order.id)) }
+        : order;
+    });
   } finally {
     await db.close();
   }

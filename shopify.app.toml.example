@@ -7,6 +7,8 @@ embedded = false
 
 [access_scopes]
 scopes = "read_products"
+# Optional order sync; request through OAuth only after explicitly enabling it.
+optional_scopes = ["write_orders"]
 # Keep the existing explicit authorization-code grant flow.
 use_legacy_install_flow = true
 

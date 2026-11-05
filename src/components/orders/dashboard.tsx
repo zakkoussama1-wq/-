@@ -1,4 +1,5 @@
 "use client";
+import { syncLabels } from "@/modules/orders/shopify/types";
 import { useEffect, useState, useRef } from "react";
 import {
   ArrowDownToLine,
@@ -95,6 +96,31 @@ export function OrdersDashboard({
       setNotice("تم تحديث حالة الطلب.");
     } catch {
       setError("تعذر حفظ حالة الطلب.");
+    } finally {
+      updating.current = false;
+      setBusy(null);
+    }
+  }
+  async function retryShopify(order: StoredOrder) {
+    if (updating.current) return;
+    updating.current = true;
+    setBusy(order.id);
+    setError("");
+    try {
+      const response = await fetch("/api/orders/shopify-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: order.id }),
+      });
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error ?? "تعذرت إعادة محاولة المزامنة.");
+      await load();
+      setNotice("حُفظت مهمة المزامنة؛ الطلب المحلي محفوظ.");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "تعذرت إعادة محاولة المزامنة.",
+      );
     } finally {
       updating.current = false;
       setBusy(null);
@@ -387,6 +413,57 @@ export function OrdersDashboard({
                 <p className="data-detail-id">
                   <bdi>{selected.id}</bdi>
                 </p>
+                {selected.shopifySync && (
+                  <section
+                    className="mb-4 space-y-2 text-xs"
+                    aria-label={t("مزامنة طلب Shopify")}
+                  >
+                    <p>
+                      {t("مزامنة طلب Shopify")}:{" "}
+                      {t(syncLabels[selected.shopifySync.state])}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!!busy}
+                      onClick={() => void load()}
+                    >
+                      {t("تحديث حالة المزامنة")}
+                    </Button>
+                    {!selected.shopifySync.enabled && (
+                      <p>{t("المزامنة معطلة؛ الطلب المحلي محفوظ.")}</p>
+                    )}
+                    {selected.shopifySync.shopifyOrderId && (
+                      <p>
+                        Shopify Order ID:{" "}
+                        <bdi>{selected.shopifySync.shopifyOrderId}</bdi>
+                      </p>
+                    )}
+                    {selected.shopifySync.errorCode && (
+                      <p>
+                        {t("رمز التشخيص")}:{" "}
+                        <bdi>{selected.shopifySync.errorCode}</bdi>
+                      </p>
+                    )}
+                    {!["synced", "processing", "cancelled"].includes(
+                      selected.shopifySync.state,
+                    ) &&
+                      selected.status !== "cancelled" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!!busy || !selected.shopifySync.enabled}
+                          onClick={() => void retryShopify(selected)}
+                        >
+                          {t(
+                            selected.shopifySync.state === "uncertain"
+                              ? "التحقق من نتيجة Shopify دون إنشاء جديد"
+                              : "إعادة محاولة مزامنة Shopify",
+                          )}
+                        </Button>
+                      )}
+                  </section>
+                )}
                 <dl className="grid gap-x-6 gap-y-4 text-xs sm:grid-cols-2 lg:grid-cols-3">
                   {[
                     {
