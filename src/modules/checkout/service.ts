@@ -1,3 +1,7 @@
+import {
+  readShopifyCatalog,
+  shopifyCatalogMode,
+} from "../integrations/shopify/catalog";
 import type { FormSettings } from "../forms/settings";
 import { getFormSettings } from "../forms/repository";
 import { assertFormPricing, formValidationSchema } from "../forms/policy";
@@ -31,7 +35,9 @@ export async function priceCheckout(
   return priceCheckoutSnapshot(
     merchant,
     data,
-    await getCheckoutCatalog(merchant),
+    shopifyCatalogMode()
+      ? await readShopifyCatalog(merchant)
+      : await getCheckoutCatalog(merchant),
     await getShippingState(merchant, data.mode),
     formSettings,
   );

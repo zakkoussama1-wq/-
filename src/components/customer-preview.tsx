@@ -721,9 +721,13 @@ function CheckoutForm({
                             {option?.available
                               ? formatDzd(option.amountMinor! / 100)
                               : t(
-                                  values.communeId
-                                    ? "غير متاح"
-                                    : "اختر الولاية والبلدية",
+                                  !values.communeId
+                                    ? "اختر الولاية والبلدية"
+                                    : pricing.error
+                                      ? "تعذر حساب الطلب. أعد المحاولة."
+                                      : !option
+                                        ? "جارٍ حساب التوصيل…"
+                                        : "غير متاح",
                                 )}
                           </span>
                         </span>

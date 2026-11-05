@@ -31,13 +31,7 @@ export interface CommerceAdapter {
 export const localCommerceAdapter: CommerceAdapter = {
   source: "local",
   quote: async (merchant, input, productId) =>
-    process.env.NODE_ENV === "production"
-      ? Promise.reject(new Error("Shopify commerce adapter required"))
-      : priceCheckout(
-          merchant,
-          input,
-          await getFormSettings(merchant, productId),
-        ),
+    priceCheckout(merchant, input, await getFormSettings(merchant, productId)),
   catalog: (merchant) =>
     shopifyCatalogMode()
       ? readShopifyCatalog(merchant)

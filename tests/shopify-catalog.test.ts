@@ -1,3 +1,10 @@
+import geography from "../data/geography/catalog.json";
+import {
+  changeShipping,
+  getShippingState,
+} from "../src/modules/shipping/repository";
+import { checkoutPost } from "../src/modules/checkout/http";
+import { localCommerceAdapter } from "../src/modules/commerce/adapter";
 import { beforeEach, afterEach, it, expect, vi } from "vitest";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { Pool } from "pg";
@@ -29,6 +36,7 @@ it("keeps production on Shopify mode when external integration is disabled, with
   expect(shopifyCatalogMode()).toBe(true);
   await expect(readShopifyCatalog(merchant)).rejects.toThrow("disabled");
 });
+let authToken: string;
 let dir: string,
   merchant: string,
   deleted: boolean,
@@ -64,6 +72,7 @@ beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), "dz-shopify-catalog-"));
   vi.stubEnv("AUTH_DATABASE_PATH", join(dir, "auth.sqlite"));
   vi.stubEnv("CHECKOUT_DATABASE_PATH", join(dir, "checkout.sqlite"));
+  vi.stubEnv("SHIPPING_DATABASE_PATH", join(dir, "shipping.sqlite"));
   vi.stubEnv("DATABASE_URL", "");
   if (process.env.POSTGRES_TEST_URL) {
     schema = "catalog_" + randomBytes(12).toString("hex");
@@ -88,6 +97,7 @@ beforeEach(async () => {
     "fixture-password",
     "Fixture",
   );
+  authToken = token;
   merchant = (await sessionMerchant(token))!;
   await saveConnection(
     merchant,
@@ -260,3 +270,181 @@ it("verifies product webhook signatures and uses only the verified shop mapping 
   expect((await webhook(request(signature))).status).toBe(200);
   expect((await catalogSyncStatus(merchant)).needsSync).toBe(true);
 });
+
+it.skipIf(!process.env.POSTGRES_TEST_URL)(
+  "quotes Shopify products in production using persisted PostgreSQL shipping, with explicit office opt-in and no fallback",
+  async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const productId = "gid://shopify/Product/1";
+    const variantId = "gid://shopify/ProductVariant/1";
+    const rates = [
+      { code: "07", home: 600.5, office: 350 },
+      { code: "34", home: 700, office: 400 },
+      { code: "21", home: 800.25, office: 450 },
+    ];
+    const entries = rates.map((r) => ({
+      scope: "wilaya" as const,
+      target: r.code,
+      rule: {
+        available: true,
+        home: { enabled: true, price: r.home },
+        office: { enabled: true, price: r.office },
+        eta: "",
+      },
+    }));
+    let state = await changeShipping(merchant, "legacy58", 0, {
+      entries,
+      genericOffice: false,
+    });
+    expect((await getShippingState(merchant, "legacy58")).entries).toEqual(
+      [...entries].sort((a, b) => a.target.localeCompare(b.target)),
+    );
+    expect(
+      (await getShippingState("other-merchant", "legacy58")).entries,
+    ).toEqual([]);
+    const quoteRequest = async (
+      body: unknown,
+      kind: "quote" | "validate" = "quote",
+      selectedProduct = productId,
+    ) =>
+      checkoutPost(
+        new Request(
+          `https://app.example.test/api/checkout/${kind}?product=${encodeURIComponent(selectedProduct)}`,
+          {
+            method: "POST",
+            headers: {
+              origin: "https://app.example.test",
+              "content-type": "application/json",
+              cookie: `dz_session=${authToken}`,
+            },
+            body: JSON.stringify(body),
+          },
+        ),
+        kind,
+      );
+    const inputFor = (code: string) => ({
+      productId,
+      variantId,
+      quantity: 2,
+      mode: "legacy58" as const,
+      wilayaCode: code,
+      communeId: geography.communes.find((c) => c.legacyWilayaCode === code)!
+        .id,
+    });
+    for (const r of rates) {
+      const input = inputFor(r.code);
+      let response = await quoteRequest(input);
+      expect(response.status).toBe(200);
+      let quote = await response.json();
+      expect(quote.methods.home).toMatchObject({
+        available: true,
+        amountMinor: Math.round(r.home * 100),
+        totalMinor: 240100 + Math.round(r.home * 100),
+        source: "wilaya",
+      });
+      expect(quote.methods.office).toMatchObject({
+        available: false,
+        amountMinor: null,
+        totalMinor: null,
+      });
+      expect(quote.methods.office.reason).toContain("المكتب العام");
+      state = await changeShipping(merchant, "legacy58", state.revision, {
+        genericOffice: true,
+      });
+      response = await quoteRequest(input);
+      quote = await response.json();
+      expect(quote.methods.office).toMatchObject({
+        available: true,
+        amountMinor: r.office * 100,
+        totalMinor: 240100 + r.office * 100,
+      });
+      const validated = await quoteRequest(
+        {
+          customer: {
+            ...input,
+            name: "عميل اختباري",
+            phone: "0551234567",
+            method: "home",
+            address: "عنوان اختباري 12",
+          },
+          quoteToken: quote.quoteToken,
+        },
+        "validate",
+      );
+      expect(validated.status).toBe(200);
+      expect(await validated.json()).toMatchObject({
+        validated: true,
+        persisted: false,
+      });
+      state = await changeShipping(merchant, "legacy58", state.revision, {
+        genericOffice: false,
+      });
+    }
+    const input = inputFor("07");
+    state = await changeShipping(merchant, "legacy58", state.revision, {
+      genericOffice: true,
+      entries: [
+        {
+          scope: "commune",
+          target: input.communeId,
+          rule: {
+            available: true,
+            home: { enabled: false, price: 600.5 },
+            office: { enabled: true, price: 275.25 },
+            eta: "",
+          },
+        },
+      ],
+    });
+    const overridden = await (await quoteRequest(input)).json();
+    expect(overridden.methods.home).toMatchObject({
+      available: false,
+      amountMinor: null,
+      totalMinor: null,
+    });
+    expect(overridden.methods.office).toMatchObject({
+      available: true,
+      amountMinor: 27525,
+      source: "commune",
+      totalMinor: 267625,
+    });
+    state = await changeShipping(merchant, "legacy58", state.revision, {
+      entries: [
+        {
+          scope: "wilaya",
+          target: "21",
+          rule: { ...entries[2].rule, available: false },
+        },
+      ],
+    });
+    const disabled = await (await quoteRequest(inputFor("21"))).json();
+    expect(disabled.methods.home.available).toBe(false);
+    expect(disabled.methods.office.available).toBe(false);
+    const missing = await (await quoteRequest(inputFor("16"))).json();
+    expect(missing.methods.home.amountMinor).toBeNull();
+    expect(missing.methods.office.amountMinor).toBeNull();
+    expect(
+      (await quoteRequest({ ...input, communeId: inputFor("34").communeId }))
+        .status,
+    ).toBe(400);
+    expect((await quoteRequest({ ...input, quantity: 4 })).status).toBe(422);
+    expect(
+      (await quoteRequest(input, "quote", "gid://shopify/Product/2")).status,
+    ).toBe(400);
+    await expect(
+      localCommerceAdapter.submit(merchant, {}, "not-an-order"),
+    ).rejects.toThrow("not implemented");
+    const db = await authDb();
+    try {
+      expect(
+        (
+          await db
+            .prepare("SELECT to_regclass('checkout_products') AS local_catalog")
+            .get()
+        )?.local_catalog,
+      ).toBeNull();
+    } finally {
+      await db.close();
+    }
+  },
+);
