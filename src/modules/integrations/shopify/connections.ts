@@ -340,3 +340,25 @@ export async function uninstallConnection(
     await db.close();
   }
 }
+
+/** Pure decoding for readiness: no database access, token refresh or credential writes. */
+export function inspectOfflineCredential(
+  merchant: string,
+  shop: string,
+  encryptedToken: string,
+  encryptedSession: string | null,
+) {
+  if (!encryptedSession) throw new Error("OFFLINE_SESSION_REQUIRED");
+  unseal(merchant, encryptedToken);
+  const session = Session.fromPropertyArray(
+    JSON.parse(unseal(merchant, encryptedSession)),
+  );
+  if (session.shop !== shop || session.isOnline || !session.accessToken)
+    throw new Error("TOKEN_BINDING_INVALID");
+  if (session.isExpired()) throw new Error("TOKEN_EXPIRED");
+  return {
+    accessToken: session.accessToken,
+    scope: session.scope ?? "",
+    offline: true,
+  };
+}

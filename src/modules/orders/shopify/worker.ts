@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { StoredOrder } from "../repository";
 import { openOutbox } from "./outbox";
+import { syncSelection, permittedOrder } from "./trial";
 import { orderSyncEnabled, SyncFailure, type SyncState } from "./types";
 import {
   buildOrderPayload,
@@ -17,13 +18,25 @@ async function claim(): Promise<Job | undefined> {
   const db = await openOutbox();
   try {
     await db.exec("BEGIN IMMEDIATE");
+    await db.lock("shopify-order-scope");
     await db.lock("shopify-order-claim");
+    const selection = await syncSelection(db);
+    if (!selection.allowed) {
+      await db.exec("COMMIT");
+      return;
+    }
     const now = Date.now();
     const row = await db
       .prepare(
-        "SELECT * FROM shopify_order_outbox WHERE next_attempt<=? AND (state IN ('queued','retryable','uncertain') OR (state='processing' AND lease_until<=?)) ORDER BY next_attempt,order_id LIMIT 1",
+        "SELECT * FROM shopify_order_outbox WHERE next_attempt<=? AND (state IN ('queued','retryable','uncertain') OR (state='processing' AND lease_until<=?)) AND (?='' OR (merchant_id=? AND order_id=?)) ORDER BY next_attempt,order_id LIMIT 1",
       )
-      .get(now, now);
+      .get(
+        now,
+        now,
+        selection.orderId ?? "",
+        selection.merchantId ?? "",
+        selection.orderId ?? "",
+      );
     if (!row) {
       await db.exec("COMMIT");
       return;
@@ -94,6 +107,11 @@ async function markDispatched(
   const db = await openOutbox();
   try {
     await db.exec("BEGIN IMMEDIATE");
+    await db.lock("shopify-order-scope");
+    if (
+      !(await permittedOrder(db, String(job.merchant_id), String(job.order_id)))
+    )
+      throw new SyncFailure("TRIAL_SCOPE_DENIED");
     await db.lock(`orders:${job.merchant_id}`);
     const local = await db
       .prepare("SELECT status FROM orders WHERE merchant_id=? AND id=?")
@@ -253,20 +271,10 @@ export async function processNextOrderSync(): Promise<boolean> {
         ? error
         : new SyncFailure("TRANSPORT_OR_STORAGE_FAILURE", "retryable");
     const definiteRejection =
-      attemptedCreate &&
-      [
-        "THROTTLED",
-        "SHOPIFY_ACCESS_DENIED",
-        "PROTECTED_DATA_OR_SCOPE_DENIED",
-      ].includes(failure.code);
+      attemptedCreate && failure.outcome === "not_created";
     if (failure.code === "MULTIPLE_REMOTE_MATCHES") sent = true;
     const ambiguous = sent && !definiteRejection;
-    let state: SyncState =
-      failure.kind === "reauthorization"
-        ? "reauthorization"
-        : ambiguous
-          ? "uncertain"
-          : failure.kind;
+    let state: SyncState = ambiguous ? "uncertain" : failure.kind;
     if (failure.code === "MULTIPLE_REMOTE_MATCHES") state = "review";
     if (Number(job.attempts) >= 5 && state === "retryable") state = "review";
     await finish(

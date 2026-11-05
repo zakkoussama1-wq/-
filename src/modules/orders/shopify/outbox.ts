@@ -1,3 +1,5 @@
+import { trialSchema, trialGuardSchema, permittedOrder } from "./trial";
+import { SyncFailure, orderSyncMode, trialOrderId } from "./types";
 import { Database } from "../../storage/database";
 import { join } from "node:path";
 import type { StoredOrder } from "../repository";
@@ -20,12 +22,16 @@ export async function openOutbox() {
       join(process.cwd(), "data/orders.sqlite"),
   );
   try {
-    await db.exec(outboxSchema);
+    await ensureOutbox(db);
     return db;
   } catch (error) {
     await db.close();
     throw error;
   }
+}
+export async function ensureOutbox(db: Database) {
+  await db.exec(outboxSchema + trialSchema);
+  if (process.env.DATABASE_URL) await db.exec(trialGuardSchema);
 }
 export async function enqueueOrder(db: Database, order: StoredOrder) {
   if (order.catalogSource !== "shopify") return;
@@ -48,6 +54,9 @@ export async function requestOrderSync(merchant: string, id: string) {
   const db = await openOutbox();
   try {
     await db.exec("BEGIN IMMEDIATE");
+    await db.lock("shopify-order-scope");
+    if (!(await permittedOrder(db, merchant, id)))
+      throw new SyncFailure("TRIAL_SCOPE_DENIED");
     await db.lock(`orders:${merchant}`);
     const row = await db
       .prepare("SELECT * FROM orders WHERE merchant_id=? AND id=?")
@@ -73,6 +82,58 @@ export async function requestOrderSync(merchant: string, id: string) {
       .get(merchant, id);
     await db.exec("COMMIT");
     return syncView(result);
+  } catch (error) {
+    await db.exec("ROLLBACK");
+    throw error;
+  } finally {
+    await db.close();
+  }
+}
+
+// This operation is explicit and separate from the read-only readiness endpoint.
+export async function prepareOrderTrial(merchant: string, id: string) {
+  if (process.env.DZ_SHOPIFY_ORDER_SYNC === "1")
+    throw new SyncFailure("DISABLE_SYNC_BEFORE_TRIAL");
+  if (orderSyncMode() !== "single_order" || trialOrderId() !== id)
+    throw new SyncFailure("TRIAL_CONFIG_MISMATCH");
+  const db = await openOutbox();
+  try {
+    await db.exec("BEGIN IMMEDIATE");
+    await db.lock("shopify-order-scope");
+    const current = await db
+      .prepare(
+        "SELECT merchant_id,order_id FROM shopify_order_trial WHERE singleton=1",
+      )
+      .get();
+    if (current) {
+      if (current.merchant_id !== merchant || current.order_id !== id)
+        throw new SyncFailure("TRIAL_ALREADY_BOUND");
+    } else {
+      const row = await db
+        .prepare("SELECT * FROM orders WHERE merchant_id=? AND id=?")
+        .get(merchant, id);
+      if (
+        !row ||
+        row.status === "cancelled" ||
+        JSON.parse(String(row.data)).catalogSource !== "shopify"
+      )
+        throw new SyncFailure("TRIAL_ORDER_INVALID");
+      if (
+        await db
+          .prepare(
+            "SELECT order_id FROM shopify_order_outbox WHERE state='processing' LIMIT 1",
+          )
+          .get()
+      )
+        throw new SyncFailure("TRIAL_WORKERS_IN_FLIGHT");
+      await db
+        .prepare(
+          "INSERT INTO shopify_order_trial(singleton,merchant_id,order_id,created_at) VALUES(1,?,?,?)",
+        )
+        .run(merchant, id, new Date().toISOString());
+    }
+    await db.exec("COMMIT");
+    return { prepared: true, orderId: id };
   } catch (error) {
     await db.exec("ROLLBACK");
     throw error;

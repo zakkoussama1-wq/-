@@ -56,65 +56,7 @@ export async function orderClient(merchant: string) {
   const shop = shopHostname(credential.shop);
   const tenant = await verifiedShopForMerchant(merchant);
   if (tenant.domain !== shop) throw new SyncFailure("SHOP_BINDING_MISMATCH");
-  // No SDK/HTTP automatic retries: a mutation timeout is ambiguous, not a retry signal.
-  const graph: Graph = async (query, variables = {}) => {
-    const response = await fetch(
-      `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": credential.accessToken,
-        },
-        body: JSON.stringify({ query, variables }),
-        redirect: "error",
-        signal: AbortSignal.timeout(15000),
-      },
-    );
-    if (response.status === 429) {
-      const seconds = Number(response.headers.get("retry-after"));
-      throw new SyncFailure(
-        "THROTTLED",
-        "retryable",
-        Math.max(
-          30000,
-          Math.min(3600000, Number.isFinite(seconds) ? seconds * 1000 : 30000),
-        ),
-      );
-    }
-    if (response.status === 401 || response.status === 403)
-      throw new SyncFailure("SHOPIFY_ACCESS_DENIED", "reauthorization");
-    if (!response.ok)
-      throw new SyncFailure("SHOPIFY_HTTP_FAILURE", "retryable");
-    if (response.headers.get("x-shopify-api-version") !== "2026-10")
-      throw new SyncFailure("API_VERSION_MISMATCH");
-    const body = await response.json();
-    // Preserve a returned order ID even if Shopify also reports errors. Never recreate it.
-    if (body.data?.orderCreate?.order) return body.data;
-    if (body.errors?.length) {
-      if (
-        body.errors.every(
-          (e: { extensions?: { code?: string } }) =>
-            e.extensions?.code === "THROTTLED",
-        )
-      )
-        throw new SyncFailure("THROTTLED", "retryable");
-      if (
-        body.errors.some(
-          (e: { extensions?: { code?: string } }) =>
-            e.extensions?.code === "ACCESS_DENIED",
-        )
-      )
-        throw new SyncFailure(
-          "PROTECTED_DATA_OR_SCOPE_DENIED",
-          "reauthorization",
-        );
-      throw new SyncFailure("SHOPIFY_GRAPHQL_REJECTED");
-    }
-    if (!body.data)
-      throw new SyncFailure("SHOPIFY_RESPONSE_INVALID", "retryable");
-    return body.data;
-  };
+  const graph = shopifyOrderGraph(shop, credential.accessToken);
   const identity = await graph(
     "query DzOrderAccess { shop { id currencyCode taxesIncluded } currentAppInstallation { accessScopes { handle } } }",
   );
@@ -313,4 +255,85 @@ export async function findRemote(
   if (result.pageInfo.hasNextPage || result.nodes.length > 1)
     throw new SyncFailure("MULTIPLE_REMOTE_MATCHES");
   return result.nodes[0];
+}
+
+export function shopifyOrderGraph(shop: string, accessToken: string): Graph {
+  // No SDK/HTTP automatic retries: a mutation timeout is ambiguous, not a retry signal.
+  return async (query, variables = {}) => {
+    const response = await fetch(
+      `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": accessToken,
+        },
+        body: JSON.stringify({ query, variables }),
+        redirect: "error",
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+    if (response.status === 429) {
+      const seconds = Number(response.headers.get("retry-after"));
+      throw new SyncFailure(
+        "THROTTLED",
+        "retryable",
+        Math.max(
+          30000,
+          Math.min(3600000, Number.isFinite(seconds) ? seconds * 1000 : 30000),
+        ),
+        "not_created",
+      );
+    }
+    if (response.status === 401 || response.status === 403)
+      throw new SyncFailure(
+        "SHOPIFY_ACCESS_DENIED",
+        "reauthorization",
+        30000,
+        "not_created",
+      );
+    if (!response.ok)
+      throw new SyncFailure("SHOPIFY_HTTP_FAILURE", "retryable");
+    if (response.headers.get("x-shopify-api-version") !== "2026-10")
+      throw new SyncFailure("API_VERSION_MISMATCH");
+    const body = await response.json();
+    // Preserve a returned order ID even if Shopify also reports errors. Never recreate it.
+    if (body.data?.orderCreate?.order) return body.data;
+    if (body.errors?.length) {
+      // GraphQL execution errors (including root/nested paths or data:null) may
+      // follow a committed side effect. Only a request-level rejection with no
+      // data member and no error paths can prove non-execution.
+      const requestRejected =
+        !Object.hasOwn(body, "data") &&
+        body.errors.every(
+          (e: { path?: unknown; extensions?: { code?: string } }) =>
+            !Object.hasOwn(e, "path") &&
+            ["ACCESS_DENIED", "THROTTLED"].includes(e.extensions?.code ?? ""),
+        );
+      const outcome = requestRejected ? "not_created" : "unknown";
+      if (
+        body.errors.every(
+          (e: { extensions?: { code?: string } }) =>
+            e.extensions?.code === "THROTTLED",
+        )
+      )
+        throw new SyncFailure("THROTTLED", "retryable", 30000, outcome);
+      if (
+        body.errors.some(
+          (e: { extensions?: { code?: string } }) =>
+            e.extensions?.code === "ACCESS_DENIED",
+        )
+      )
+        throw new SyncFailure(
+          "PROTECTED_DATA_OR_SCOPE_DENIED",
+          "reauthorization",
+          30000,
+          outcome,
+        );
+      throw new SyncFailure("SHOPIFY_GRAPHQL_REJECTED");
+    }
+    if (!body.data)
+      throw new SyncFailure("SHOPIFY_RESPONSE_INVALID", "retryable");
+    return body.data;
+  };
 }

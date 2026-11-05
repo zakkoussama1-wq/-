@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Pool } from "pg";
 import { Session } from "@shopify/shopify-api";
@@ -22,6 +23,7 @@ import {
 import { closeStoragePool } from "../src/modules/storage/database";
 import {
   openOutbox,
+  prepareOrderTrial,
   requestOrderSync,
 } from "../src/modules/orders/shopify/outbox";
 import { processNextOrderSync } from "../src/modules/orders/shopify/worker";
@@ -29,6 +31,8 @@ import {
   buildOrderPayload,
   type RemoteOrder,
 } from "../src/modules/orders/shopify/client";
+import { GET as readinessRoute } from "../src/app/api/orders/shopify-sync/readiness/route";
+import { POST as trialRoute } from "../src/app/api/orders/shopify-sync/trial/route";
 import { POST as retryRoute } from "../src/app/api/orders/shopify-sync/route";
 
 // A deliberately mocked introspection contract, NOT a claim of live Shopify verification.
@@ -150,7 +154,8 @@ let schemas: Record<string, unknown>,
   deny: boolean,
   scopes: string[],
   version: string;
-let behavior: "success" | "timeout" | "throttle" | "invalid" | "mismatch";
+let behavior:
+  "success" | "timeout" | "throttle" | "invalid" | "mismatch" | "partial";
 let sentPayload: Record<string, unknown> | undefined;
 let storeTaxesIncluded: boolean;
 const response = (data: unknown, status = 200) =>
@@ -259,6 +264,8 @@ describe.skipIf(!base)(
       url.searchParams.set("options", `-c search_path=${schema}`);
       vi.stubEnv("DATABASE_URL", url.toString());
       vi.stubEnv("NODE_ENV", "test");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "all");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", "");
       for (const name of ["AUTH", "SHIPPING", "ORDERS", "CHECKOUT"])
         vi.stubEnv(`${name}_DATABASE_PATH`, join(directory, name + ".sqlite"));
       vi.stubEnv(
@@ -342,7 +349,10 @@ describe.skipIf(!base)(
                 },
               },
             });
-          if (query.includes("DzOrderAccess"))
+          if (
+            query.includes("DzOrderAccess") ||
+            query.includes("DzOrderReadiness")
+          )
             return response({
               data: {
                 shop: {
@@ -358,6 +368,22 @@ describe.skipIf(!base)(
           if (query.includes("DzOrderType"))
             return response({
               data: { __type: schemas[variables.name] ?? null },
+            });
+          if (query.includes("DzProtectedDataReadiness"))
+            return response({
+              data: {
+                orders: {
+                  nodes: [
+                    {
+                      shippingAddress: {
+                        firstName: "Synthetic",
+                        phone: "synthetic-phone",
+                        address1: "Synthetic address",
+                      },
+                    },
+                  ],
+                },
+              },
             });
           if (query.includes("DzReadCod"))
             return response({
@@ -450,6 +476,17 @@ describe.skipIf(!base)(
             },
           };
           remotes.push(remote);
+          if (behavior === "partial")
+            return response({
+              data: { orderCreate: null },
+              errors: [
+                {
+                  message: "private-fixture-data",
+                  path: ["orderCreate", "order", "lineItems"],
+                  extensions: { code: "ACCESS_DENIED" },
+                },
+              ],
+            });
           if (behavior === "timeout")
             throw new Error("Lost response after remote commit");
           return response({
@@ -593,7 +630,7 @@ describe.skipIf(!base)(
       await requestOrderSync(merchant, order.id);
       await processNextOrderSync();
       expect(await job(order.id)).toMatchObject({
-        state: "reauthorization",
+        state: "uncertain",
         dispatched: 1,
       });
       deny = false;
@@ -601,6 +638,332 @@ describe.skipIf(!base)(
       await processNextOrderSync();
       expect((await job(order.id)).state).toBe("synced");
       expect(creates).toBe(1);
+    });
+
+    it("keeps the dispatch fence after a partial GraphQL error following a remote commit", async () => {
+      const order = await saved();
+      await enable();
+      behavior = "partial";
+      await processNextOrderSync();
+      expect(await job(order.id)).toMatchObject({
+        state: "uncertain",
+        dispatched: 1,
+      });
+      expect(creates).toBe(1);
+      hide = true;
+      behavior = "success";
+      for (let i = 0; i < 2; i++) {
+        await requestOrderSync(merchant, order.id);
+        await processNextOrderSync();
+      }
+      expect(creates).toBe(1);
+      expect((await job(order.id)).state).toBe("uncertain");
+      // New worker/client instance after a lost lease still only reconciles.
+      await admin.query(
+        `UPDATE ${schema}.shopify_order_outbox SET state='processing',lease_until=0,next_attempt=0`,
+      );
+      hide = false;
+      await processNextOrderSync();
+      expect((await job(order.id)).state).toBe("synced");
+      expect(creates).toBe(1);
+    });
+    it("persists the single-order fence across workers, stale configuration, restarts and queued backlog", async () => {
+      const old = await saved();
+      const selected = await saved();
+      const other = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", selected.id);
+      await prepareOrderTrial(merchant, selected.id);
+      await expect(
+        prepareOrderTrial(merchant, selected.id),
+      ).resolves.toMatchObject({ prepared: true });
+      const oldBefore = await job(old.id),
+        otherBefore = await job(other.id);
+      await enable();
+      await Promise.all([
+        processNextOrderSync(),
+        processNextOrderSync(),
+        processNextOrderSync(),
+      ]);
+      expect(creates).toBe(1);
+      expect((await job(selected.id)).state).toBe("synced");
+      expect(await job(old.id)).toEqual(oldBefore);
+      expect(await job(other.id)).toEqual(otherBefore);
+      await expect(requestOrderSync(merchant, old.id)).rejects.toThrow(
+        "TRIAL_SCOPE_DENIED",
+      );
+      // A misconfigured worker cannot override the database's durable trial.
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "all");
+      expect(await processNextOrderSync()).toBe(false);
+      await expect(
+        admin.query(
+          `UPDATE ${schema}.shopify_order_outbox SET dispatched=1 WHERE order_id=$1`,
+          [old.id],
+        ),
+      ).rejects.toThrow("TRIAL_SCOPE_DENIED");
+      await expect(
+        admin.query(`DELETE FROM ${schema}.shopify_order_trial`),
+      ).rejects.toThrow("TRIAL_BINDING_IMMUTABLE");
+      await expect(
+        admin.query(`TRUNCATE ${schema}.shopify_order_trial`),
+      ).rejects.toThrow("TRIAL_BINDING_IMMUTABLE");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", other.id);
+      expect(await processNextOrderSync()).toBe(false);
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC", "0");
+      await expect(prepareOrderTrial(merchant, other.id)).rejects.toThrow(
+        "TRIAL_ALREADY_BOUND",
+      );
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", selected.id);
+      await enable();
+      await closeStoragePool();
+      expect(await processNextOrderSync()).toBe(false);
+      expect(creates).toBe(1);
+    });
+    it("fails closed when trial is not prepared or an in-flight worker exists", async () => {
+      const order = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", order.id);
+      await enable();
+      expect(await processNextOrderSync()).toBe(false);
+      await expect(prepareOrderTrial(merchant, order.id)).rejects.toThrow(
+        "DISABLE_SYNC_BEFORE_TRIAL",
+      );
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC", "0");
+      await admin.query(
+        `UPDATE ${schema}.shopify_order_outbox SET state='processing'`,
+      );
+      await expect(prepareOrderTrial(merchant, order.id)).rejects.toThrow(
+        "TRIAL_WORKERS_IN_FLIGHT",
+      );
+      expect(creates).toBe(0);
+    });
+    it("authenticates trial preparation and preserves the server-selected local ID", async () => {
+      const order = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", order.id);
+      expect((await trialRoute(retryRequest(order.id, ""))).status).toBe(401);
+      expect(
+        (
+          await trialRoute(
+            retryRequest(order.id, token, "https://evil.example"),
+          )
+        ).status,
+      ).toBe(403);
+      const other = await saved();
+      expect((await trialRoute(retryRequest(other.id))).status).toBe(409);
+      expect((await trialRoute(retryRequest(order.id))).status).toBe(200);
+      expect(creates).toBe(0);
+    });
+
+    it("rejects trial preparation for another verified merchant's order", async () => {
+      const order = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", order.id);
+      const otherToken = await accountLogin(
+        "trial-other@example.test",
+        "fixture-password",
+        "Other trial",
+      );
+      const otherMerchant = (await sessionMerchant(otherToken))!;
+      await saveConnection(
+        otherMerchant,
+        "trial-other.myshopify.com",
+        "trial-fixture-token",
+        "read_products,write_orders",
+        new Session({
+          id: "offline_trial-other.myshopify.com",
+          shop: "trial-other.myshopify.com",
+          state: "",
+          isOnline: false,
+          accessToken: "trial-fixture-token",
+          scope: "read_products,write_orders",
+        }),
+        "gid://shopify/Shop/77",
+      );
+      const response = await trialRoute(retryRequest(order.id, otherToken));
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ code: "TRIAL_ORDER_INVALID" });
+      expect(
+        (
+          await admin.query(
+            `SELECT count(*)::integer AS count FROM ${schema}.shopify_order_trial`,
+          )
+        ).rows[0].count,
+      ).toBe(0);
+      expect((await trialRoute(retryRequest(order.id))).status).toBe(200);
+      const wrongOwner = await trialRoute(retryRequest(order.id, otherToken));
+      expect(wrongOwner.status).toBe(409);
+      expect(
+        (
+          await admin.query(
+            `SELECT merchant_id,order_id FROM ${schema}.shopify_order_trial`,
+          )
+        ).rows,
+      ).toEqual([{ merchant_id: merchant, order_id: order.id }]);
+      expect(creates).toBe(0);
+    });
+    it("reapplies the additive migration without rewriting existing orders, jobs or the trial binding", async () => {
+      const selected = await saved();
+      await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", selected.id);
+      await prepareOrderTrial(merchant, selected.id);
+      const snapshot = async () =>
+        (
+          await admin.query(
+            `SELECT (SELECT json_agg(x ORDER BY id) FROM ${schema}.orders x) AS orders,(SELECT json_agg(x ORDER BY order_id) FROM ${schema}.shopify_order_outbox x) AS jobs,(SELECT json_agg(x) FROM ${schema}.shopify_order_trial x) AS trial`,
+          )
+        ).rows;
+      const before = await snapshot();
+      const migration = readFileSync(
+        "scripts/migrations/005_shopify_single_order_trial.sql",
+        "utf8",
+      );
+      const client = await admin.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SELECT set_config('search_path',$1,true)", [
+          schema,
+        ]);
+        await client.query(migration);
+        await client.query(migration);
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+      expect(await snapshot()).toEqual(before);
+      expect(creates).toBe(0);
+    });
+    it("readiness authenticates in READ ONLY transactions and sends queries only, without changing rows", async () => {
+      const order = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", order.id);
+      await prepareOrderTrial(merchant, order.id);
+      const snapshot = async () =>
+        (
+          await admin.query(
+            `SELECT (SELECT json_agg(x) FROM ${schema}.shopify_order_outbox x) AS jobs,(SELECT json_agg(x) FROM ${schema}.shopify_connections x) AS credentials,(SELECT json_agg(x) FROM ${schema}.shopify_session_metadata x) AS metadata,(SELECT json_agg(x) FROM ${schema}.shopify_order_trial x) AS trial`,
+          )
+        ).rows;
+      const before = await snapshot();
+      const req = (cookie = token, extra = "") =>
+        new Request(
+          `https://app.example.test/api/orders/shopify-sync/readiness?id=${order.id}${extra}`,
+          { headers: { cookie: `dz_session=${cookie}` } },
+        );
+      expect((await readinessRoute(req(""))).status).toBe(401);
+      expect(
+        (await readinessRoute(req(token, "&store=other-merchant"))).status,
+      ).toBe(403);
+      const readonlyURL = new URL(process.env.DATABASE_URL!);
+      readonlyURL.searchParams.set(
+        "options",
+        `-c search_path=${schema} -c default_transaction_read_only=on`,
+      );
+      vi.stubEnv("DATABASE_URL", readonlyURL.toString());
+      const response = await readinessRoute(req());
+      expect(response.status).toBe(200);
+      const report = await response.json();
+      expect(report).toMatchObject({
+        readOnly: true,
+        ready: true,
+        syncEnabled: false,
+      });
+      expect(JSON.stringify(report)).not.toMatch(
+        /fixture-token|Synthetic address|synthetic-phone/,
+      );
+      expect(await snapshot()).toEqual(before);
+      expect(creates).toBe(0);
+      for (const call of vi.mocked(fetch).mock.calls)
+        expect(JSON.parse(String(call[1]?.body)).query).not.toMatch(
+          /^mutation/,
+        );
+    });
+
+    it("readiness refuses another merchant's order and never claims protected access from an empty result", async () => {
+      const order = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", order.id);
+      await prepareOrderTrial(merchant, order.id);
+      const otherToken = await accountLogin(
+        "other-probe@example.test",
+        "fixture-password",
+        "Other fixture",
+      );
+      const otherMerchant = (await sessionMerchant(otherToken))!;
+      await saveConnection(
+        otherMerchant,
+        "other-fixture.myshopify.com",
+        "other-fixture-token",
+        "read_products,write_orders",
+        new Session({
+          id: "offline_other-fixture.myshopify.com",
+          shop: "other-fixture.myshopify.com",
+          state: "",
+          isOnline: false,
+          accessToken: "other-fixture-token",
+          scope: "read_products,write_orders",
+        }),
+        "gid://shopify/Shop/66",
+      );
+      const req = (cookie = token) =>
+        new Request(
+          `https://app.example.test/api/orders/shopify-sync/readiness?id=${order.id}`,
+          { headers: { cookie: `dz_session=${cookie}` } },
+        );
+      const calls = vi.mocked(fetch).mock.calls.length;
+      expect((await readinessRoute(req(otherToken))).status).toBe(404);
+      expect(vi.mocked(fetch).mock.calls.length).toBe(calls);
+      const original = fetch;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url, options) => {
+          const { query } = JSON.parse(String(options?.body));
+          if (query.includes("DzProtectedDataReadiness"))
+            return response({ data: { orders: { nodes: [] } } });
+          return original(url, options);
+        }),
+      );
+      const report = await (await readinessRoute(req())).json();
+      expect(report).toMatchObject({
+        ready: false,
+        checks: {
+          protectedData: {
+            status: "unverified",
+            code: "PROTECTED_DATA_NOT_PROVEN",
+          },
+        },
+      });
+      const before = await job(order.id);
+      await admin.query(
+        `DROP TRIGGER dz_trial_dispatch ON ${schema}.shopify_order_outbox`,
+      );
+      const missingFence = await (await readinessRoute(req())).json();
+      expect(missingFence).toMatchObject({
+        ready: false,
+        checks: { databaseFence: { status: "blocked" } },
+      });
+      // No schema-initialization helper silently repairs the dropped trigger.
+      expect(
+        (
+          await admin.query(
+            `SELECT 1 FROM pg_trigger WHERE tgrelid='${schema}.shopify_order_outbox'::regclass AND tgname='dz_trial_dispatch'`,
+          )
+        ).rows,
+      ).toHaveLength(0);
+      expect(creates).toBe(0);
+      expect(
+        (
+          await admin.query(
+            `SELECT state,dispatched FROM ${schema}.shopify_order_outbox WHERE order_id=$1`,
+            [order.id],
+          )
+        ).rows[0],
+      ).toMatchObject({ state: before.state, dispatched: before.dispatched });
     });
     it("never recreates an ambiguous order when the search index has not found it yet", async () => {
       const order = await saved();

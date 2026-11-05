@@ -1,4 +1,4 @@
-import { enqueueOrder, outboxSchema, syncView } from "./shopify/outbox";
+import { enqueueOrder, ensureOutbox, syncView } from "./shopify/outbox";
 import type { ShopifySyncView } from "./shopify/types";
 import {
   readShopifyCatalog,
@@ -67,7 +67,7 @@ async function dbOpen() {
   await db.exec(
     `PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,key TEXT NOT NULL,hash TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,data TEXT NOT NULL,UNIQUE(merchant_id,key)); CREATE INDEX IF NOT EXISTS order_tenant_date ON orders(merchant_id,created_at); CREATE TABLE IF NOT EXISTS submission_limits(merchant_id TEXT NOT NULL,phone_hash TEXT NOT NULL,bucket INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(merchant_id,phone_hash,bucket));`,
   );
-  await db.exec(outboxSchema);
+  await ensureOutbox(db);
   if (process.env.NODE_ENV !== "production") await ensureSimulationTables(db);
   return db;
 }
