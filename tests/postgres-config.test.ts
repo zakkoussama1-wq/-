@@ -37,7 +37,8 @@ describe("PostgreSQL transport verification", () => {
     );
     expect(client.ssl).toBeTypeOf("object");
     expect(
-      (client.ssl as import("node:tls").ConnectionOptions).rejectUnauthorized,
+      (client.ssl as unknown as import("node:tls").ConnectionOptions)
+        .rejectUnauthorized,
     ).not.toBe(false);
   });
   it("keeps real pg verification active even with libpq require semantics", () => {
