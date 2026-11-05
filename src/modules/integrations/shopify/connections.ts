@@ -195,6 +195,7 @@ export async function connectionStatus(merchant: string) {
 export async function connectionCredential(
   merchant: string,
   requireOffline = false,
+  refreshIfExpired = true,
 ) {
   const db = await dbOpen();
   try {
@@ -221,7 +222,11 @@ export async function connectionCredential(
       );
       if (session.shop !== row.shop || session.isOnline)
         throw new Error("Invalid session binding");
-      if (session.isExpired(60000)) {
+      if (session.isExpired(refreshIfExpired ? 60000 : 0)) {
+        if (!refreshIfExpired)
+          throw new Error(
+            "Current Shopify token expired; authorization check requires reconnecting.",
+          );
         if (
           !session.refreshToken ||
           !session.refreshTokenExpires ||
