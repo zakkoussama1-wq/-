@@ -25,6 +25,7 @@ const config: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    "/api/health": ["./scripts/postgres-schema.sql"],
     "/api/geography/*": ["./data/geography.sqlite"],
   },
 };

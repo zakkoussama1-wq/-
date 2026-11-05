@@ -3,6 +3,17 @@ import { validSession } from "@/modules/auth/store";
 import { localMerchantId } from "@/modules/merchants/local-context";
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  if (process.env.DZ_BOOTSTRAP_MODE === "1") {
+    if (path !== "/api/health")
+      return NextResponse.json(
+        {
+          error: "Deployment setup required; Shopify is unavailable",
+          code: "SETUP_REQUIRED",
+        },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    return NextResponse.next();
+  }
   if (process.env.NODE_ENV === "production") {
     const bootstrap = [
       "/api/auth",
@@ -59,6 +70,11 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
+    "/api/health",
+    "/api/auth",
+    "/api/shopify/webhooks",
+    "/media/:path*",
+    "/form",
     "/",
     "/dashboard",
     "/api/shipping/:path*",

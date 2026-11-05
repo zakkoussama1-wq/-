@@ -23,6 +23,8 @@ export function postgresConfiguration(url: string) {
   return {
     connectionString: parsed.toString(),
     max: 10,
+    connectionTimeoutMillis: 5000,
+    statement_timeout: 10000,
     ...(!local ? { ssl: { rejectUnauthorized: true } } : {}),
   };
 }

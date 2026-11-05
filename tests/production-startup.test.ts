@@ -38,3 +38,21 @@ it("refuses missing services, demo bypass and remote databases without TLS witho
     expect(result.stderr).not.toContain("PRIVATE-FIXTURE-SECRET");
   }
 });
+
+it("allows explicit bootstrap without Shopify but enforces database, encryption and bypass restrictions", () => {
+  const bootstrap = {
+    DATABASE_URL: fixture.DATABASE_URL,
+    INTEGRATIONS_ENCRYPTION_KEY: fixture.INTEGRATIONS_ENCRYPTION_KEY,
+    DZ_BOOTSTRAP_MODE: "1",
+  };
+  expect(run(bootstrap).status).toBe(0);
+  for (const changes of [
+    { DATABASE_URL: undefined },
+    { INTEGRATIONS_ENCRYPTION_KEY: "invalid" },
+    { DZ_AUTH_TEST_BYPASS: "1" },
+    { DZ_LOCAL_DEMO: "1" },
+    { DZ_BOOTSTRAP_MODE: "0" },
+    { DZ_BOOTSTRAP_MODE: "typo" },
+  ])
+    expect(run({ ...bootstrap, ...changes }).status).toBe(1);
+});

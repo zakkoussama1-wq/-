@@ -68,6 +68,7 @@ export function externalShopifyRequest(request: Request) {
 
 export function integrationsDisabled() {
   return (
+    process.env.DZ_BOOTSTRAP_MODE === "1" ||
     process.env.DZ_LOCAL_DEMO === "1" ||
     process.env.DZ_DISABLE_EXTERNAL_INTEGRATIONS === "1"
   );

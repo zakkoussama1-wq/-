@@ -7,7 +7,7 @@ RUN --mount=type=secret,id=proxy_ca \
 FROM dependencies AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY . .
-RUN npm run build
+RUN npm run build -- --webpack
 FROM node:24-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000 NODE_USE_ENV_PROXY=1
