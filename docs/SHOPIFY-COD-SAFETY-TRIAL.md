@@ -133,3 +133,29 @@ creates an order. Tests run this route with PostgreSQL's connection-level
 Tests use synthetic credentials/customers, mocked Shopify including its schema,
 and isolated PostgreSQL schemas. No live API schema, real token, protected-data
 approval, Render queue or real creation has been verified in this workspace.
+
+## Order details UI
+
+The order details dialog offers “Prepare Shopify trial” only when the authenticated
+orders API supplies `trialPreparationAllowed:true` for that owned order. This hint
+requires a Shopify-sourced, non-cancelled order matching the server's configured
+single UUID, an enabled PostgreSQL configuration, sending OFF, and external
+integrations available. No configured foreign order UUID is sent to the browser.
+The existing POST still independently verifies the merchant, same-origin request,
+server UUID and durable binding; a forged UI hint cannot authorize preparation.
+
+“Check readiness” is available for owned Shopify orders, including those that are
+not selected, so their blockers can be inspected without preparing them. Both
+buttons use same-origin HttpOnly session cookies, no-store and redirect rejection.
+Preparation and readiness requests disable competing actions while pending.
+Responses are reset for each action/order; active requests are aborted on unmount.
+The UI validates the read-only response and displays only allowlisted codes and
+fixed Arabic/French/English descriptions. Raw upstream messages, customer fields,
+tokens and unknown response fields are never rendered. Missing/expired sessions,
+network failures, invalid reports and preparation conflicts have distinct safe
+feedback. No activation or order-creation action was added.
+
+The settings remain `DZ_SHOPIFY_ORDER_SYNC=0`, `single_order`, a server-configured
+local UUID and `BYPASS`. This UI change does not prepare the real order during tests
+or alter any Render/Shopify/database settings. UI tests use synthetic orders and
+mocked endpoints; integration tests use isolated PostgreSQL and mocked Shopify.

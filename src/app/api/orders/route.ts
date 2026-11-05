@@ -1,3 +1,4 @@
+import { canPrepareOrderTrial } from "@/modules/orders/shopify/trial";
 import { localCommerceAdapter } from "@/modules/commerce/adapter";
 import { requestedProduct } from "@/modules/forms/product-form";
 import { NextResponse } from "next/server";
@@ -24,7 +25,19 @@ export async function GET(request: Request) {
           },
         })
       : NextResponse.json(
-          { orders },
+          {
+            orders: orders.map((order) =>
+              order.shopifySync
+                ? {
+                    ...order,
+                    shopifySync: {
+                      ...order.shopifySync,
+                      trialPreparationAllowed: canPrepareOrderTrial(order),
+                    },
+                  }
+                : order,
+            ),
+          },
           { headers: { "Cache-Control": "no-store" } },
         );
   } catch {

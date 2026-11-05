@@ -18,6 +18,7 @@ import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import { Surface, Skeleton, Toast } from "../ui/surface";
 import { TablePagination } from "../ui/table-pagination";
+import { ShopifyTrialPanel } from "./shopify-trial";
 import { OrderLocation } from "./location";
 import { formatDzd } from "@/lib/i18n";
 const labels: Record<OrderStatus, string> = {
@@ -464,6 +465,20 @@ export function OrdersDashboard({
                       )}
                   </section>
                 )}
+                {selected.catalogSource === "shopify" &&
+                  selected.shopifySync && (
+                    <ShopifyTrialPanel
+                      key={selected.id}
+                      orderId={selected.id}
+                      canPrepare={
+                        selected.shopifySync.trialPreparationAllowed === true
+                      }
+                      disabled={!!busy}
+                      onBusyChange={(value) =>
+                        setBusy(value ? selected.id : null)
+                      }
+                    />
+                  )}
                 <dl className="grid gap-x-6 gap-y-4 text-xs sm:grid-cols-2 lg:grid-cols-3">
                   {[
                     {

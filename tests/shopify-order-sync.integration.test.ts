@@ -1,3 +1,4 @@
+import { GET as ordersRoute } from "../src/app/api/orders/route";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Pool } from "pg";
@@ -836,6 +837,37 @@ describe.skipIf(!base)(
         client.release();
       }
       expect(await snapshot()).toEqual(before);
+      expect(creates).toBe(0);
+    });
+
+    it("exposes preparation eligibility only for the configured order in the authenticated merchant list", async () => {
+      const selected = await saved();
+      const other = await saved();
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC_MODE", "single_order");
+      vi.stubEnv("DZ_SHOPIFY_ORDER_TRIAL_ID", selected.id);
+      const request = () =>
+        new Request("https://app.example.test/api/orders", {
+          headers: { cookie: `dz_session=${token}` },
+        });
+      const response = await ordersRoute(request());
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(
+        data.orders.find((o: { id: string }) => o.id === selected.id)
+          .shopifySync.trialPreparationAllowed,
+      ).toBe(true);
+      expect(
+        data.orders.find((o: { id: string }) => o.id === other.id).shopifySync
+          .trialPreparationAllowed,
+      ).toBe(false);
+      vi.stubEnv("DZ_SHOPIFY_ORDER_SYNC", "1");
+      const enabled = await (await ordersRoute(request())).json();
+      expect(
+        enabled.orders.every(
+          (o: { shopifySync: { trialPreparationAllowed: boolean } }) =>
+            !o.shopifySync.trialPreparationAllowed,
+        ),
+      ).toBe(true);
       expect(creates).toBe(0);
     });
     it("readiness authenticates in READ ONLY transactions and sends queries only, without changing rows", async () => {

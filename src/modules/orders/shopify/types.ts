@@ -13,6 +13,7 @@ export interface ShopifySyncView {
   shopifyOrderId: string | null;
   attempts: number;
   errorCode: string;
+  trialPreparationAllowed?: boolean;
 }
 export const syncLabels: Record<ShopifySyncView["state"], string> = {
   not_queued: "لم تُجهّز المزامنة",

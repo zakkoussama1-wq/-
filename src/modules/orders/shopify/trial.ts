@@ -74,3 +74,22 @@ export async function permittedOrder(
       (selection.orderId === id && selection.merchantId === merchant))
   );
 }
+
+/** Server-only eligibility hint; POST independently rechecks ownership and its durable fence. */
+export function canPrepareOrderTrial(order: {
+  id: string;
+  catalogSource?: string;
+  status: string;
+}) {
+  return (
+    process.env.DZ_SHOPIFY_ORDER_SYNC !== "1" &&
+    !!process.env.DATABASE_URL &&
+    process.env.DZ_BOOTSTRAP_MODE !== "1" &&
+    process.env.DZ_LOCAL_DEMO !== "1" &&
+    process.env.DZ_DISABLE_EXTERNAL_INTEGRATIONS !== "1" &&
+    orderSyncMode() === "single_order" &&
+    trialOrderId() === order.id &&
+    order.catalogSource === "shopify" &&
+    order.status !== "cancelled"
+  );
+}
