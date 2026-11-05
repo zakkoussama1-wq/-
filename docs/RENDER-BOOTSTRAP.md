@@ -87,3 +87,80 @@ these through the first deployment's health and redacted logs.
 - App restart preserved a synthetic database sentinel; accounts/orders were not
   seeded from SQLite. The healthy container's Docker health command passed.
 - No Render deployment or live Shopify connection was performed.
+
+## Troubleshooting a Render health-check timeout
+
+Next.js Ready and a detected port prove the listener started, not database readiness.
+Bootstrap deliberately permits /api/health. Keep that path unchanged and keep
+DZ_BOOTSTRAP_MODE=1. Production health now uses its own bounded PostgreSQL pool,
+not authDb (which previously ran authentication DDL and could leak a connection
+when initialization failed). Failed transactions are discarded and initialization
+is retried. An HTTP readiness wait is limited to 3 seconds; unhealthy returns 503.
+The schema is initialized once per process, without SQLite import or row updates.
+
+1. Deploy the latest main commit manually. Keep Docker runtime, default container
+   command and Render-provided PORT. Do not add a command that bypasses preflight.
+2. Check the database resource is Available, not expired/suspended, and is the
+   intended Frankfurt PostgreSQL resource. Confirm DATABASE_URL was copied from
+   that resource into this Web Service's Environment, with no quotes/newlines.
+   Never paste the value into chat or logs. Confirm the username/database/password
+   belong to that resource; keep the existing encryption key unchanged.
+3. Read runtime logs for `database_readiness_failed`. Only a stage and a fixed
+   error code are logged; raw driver errors, SQL, hostnames and credentials are
+   intentionally omitted. The public response remains only ok=false with 503.
+4. Interpret the code:
+   - ENOTFOUND/EAI_AGAIN: hostname or DNS. Verify the correct database URL and region.
+   - ECONNREFUSED/ECONNRESET/ETIMEDOUT/DB_TIMEOUT: endpoint, availability, network
+     access or overload. Check database status, connections and service events.
+   - 28P01/28000: authentication; recopy current database credentials securely.
+   - 3D000: database does not exist; use the selected database's connection string.
+   - TLS_UNSUPPORTED: selected endpoint does not offer TLS. Use a Render-supported
+     TLS endpoint (check the External Database URL if necessary), and configure
+     network access narrowly for the service as required by Render. Do not disable
+     TLS verification to work around this error.
+   - TLS certificate codes/TLS_VERIFICATION_FAILED: confirm hostname and trusted
+     certificate chain; use the official endpoint. Do not use rejectUnauthorized=false.
+   - 42501: selected role lacks schema/table permissions. Use the database owner
+     role intended for this application, or have the database administrator review
+     and grant only the needed privileges. Do not delete/recreate the database.
+   - 55P03: schema/advisory lock contention. Inspect active migration/DDL sessions
+     with the database administrator; do not kill unknown sessions blindly.
+   - 57014: statement timeout. Inspect database load/blocked statements.
+   - 53300: too many connections. Review database connection usage and service count.
+   - SCHEMA_FILE_MISSING: image packaging; ensure current Dockerfile/context/build.
+   - DB_READINESS_FAILED: failure is unclassified; report the safe stage/code for
+     further diagnosis, without sharing raw connection strings.
+5. From Render's supported database console/psql connection, the administrator can
+   run these read-only checks (do not print the connection URL):
+
+   ```sql
+   SELECT version(), current_user, current_database(), current_schema();
+   SELECT has_database_privilege(current_user, current_database(), 'CONNECT');
+   SELECT has_schema_privilege(current_user, current_schema(), 'USAGE'),
+          has_schema_privilege(current_user, current_schema(), 'CREATE');
+   SELECT table_name FROM information_schema.tables
+   WHERE table_schema = current_schema() ORDER BY table_name;
+   ```
+
+   Initialization requires CONNECT, schema USAGE/CREATE and ownership/appropriate
+   rights for existing schema objects. Normal operation additionally requires
+   application table SELECT/INSERT/UPDATE/DELETE. A SELECT 1 alone cannot prove
+   schema initialization permissions. Do not run db:migrate-postgres: it is an
+   explicit SQLite import tool, not the startup prerequisite.
+
+6. Retry deployment after fixing the indicated setting. Require /api/health HTTP
+   200 and ok=true. Do not switch the health path to a static page to hide failure.
+
+The local test environment has no Render credentials or binding to the real
+Render database. Local PostgreSQL tests cannot determine which error the real
+Render endpoint returns; the new safe logs are needed to establish that cause.
+
+Readiness-fix verification: 204 tests passed with PostgreSQL 18.6; lint, type
+checking, formatting and final Docker production build passed. Final Bootstrap
+containers returned 200 for a healthy database, 503/ECONNREFUSED for an unreachable
+endpoint, 503/42501 for missing schema privileges, and 503/TLS_UNSUPPORTED for a
+non-TLS endpoint. Combined stdout/stderr logs were checked for absence of fixture
+passwords and connection strings. Bootstrap protected routes still returned 503.
+Integration tests repeated permission failures 12 times without pool exhaustion,
+verified lock timeouts and successful retry, and preserved an existing row across
+schema reinitialization. No real Render database or Shopify data was accessed.
