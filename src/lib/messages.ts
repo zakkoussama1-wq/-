@@ -3023,4 +3023,65 @@ export const messages: Record<string, { en: string; fr: string }> = {
     en: "Refresh sync status",
     fr: "Actualiser la synchronisation",
   },
+  "صلاحيات Shopify الفعلية": {
+    en: "Effective Shopify permissions",
+    fr: "Autorisations Shopify effectives",
+  },
+  "فحص صلاحيات Shopify": {
+    en: "Check Shopify permissions",
+    fr: "Vérifier les autorisations Shopify",
+  },
+  "جارٍ فحص صلاحيات Shopify…": {
+    en: "Checking Shopify permissions…",
+    fr: "Vérification des autorisations Shopify…",
+  },
+  "يستخدم الفحص جلسة حساب التاجر الحالية، ولا يفعّل مزامنة الطلبات.": {
+    en: "This check uses your merchant session and does not enable order sync.",
+    fr: "Cette vérification utilise votre session marchand et n’active pas la synchronisation des commandes.",
+  },
+  "نتيجة فحص صلاحيات Shopify": {
+    en: "Shopify permission check result",
+    fr: "Résultat des autorisations Shopify",
+  },
+  ممنوحة: { en: "Granted", fr: "Accordée" },
+  "غير ممنوحة": { en: "Not granted", fr: "Non accordée" },
+  "انتهت جلسة التاجر أو لم تُرسل. سجّل الدخول من لوحة التحكم ثم أعد الفحص.": {
+    en: "Your merchant session expired or was not sent. Sign in through the dashboard and retry.",
+    fr: "Votre session marchand a expiré ou n’a pas été envoyée. Connectez-vous depuis le tableau de bord puis réessayez.",
+  },
+  "جلسة الإدارة القديمة لا تحدد تاجرًا. سجّل الدخول ببريد حساب التاجر المرتبط بالمتجر.":
+    {
+      en: "The legacy owner session does not identify a merchant. Sign in with the merchant account linked to the shop.",
+      fr: "La session propriétaire historique n’identifie pas de marchand. Connectez-vous avec le compte marchand lié à la boutique.",
+    },
+  "لا يمكن فحص صلاحيات متجر آخر.": {
+    en: "You cannot check another shop’s permissions.",
+    fr: "Vous ne pouvez pas vérifier les autorisations d’une autre boutique.",
+  },
+  "هذا الحساب لا يرتبط بمتجر Shopify موثّق. أعد الربط من الحساب الصحيح.": {
+    en: "This account has no verified Shopify connection. Reconnect from the correct account.",
+    fr: "Ce compte n’a pas de connexion Shopify vérifiée. Reconnectez-vous avec le bon compte.",
+  },
+  "تعذر التحقق من جلسة التاجر مؤقتًا. أعد المحاولة.": {
+    en: "Could not check your merchant session. Please retry.",
+    fr: "Impossible de vérifier la session marchand. Réessayez.",
+  },
+  "تعذر فحص الصلاحيات من Shopify. أعد المحاولة، أو أعد ربط المتجر إذا انتهى التفويض.":
+    {
+      en: "Could not check permissions with Shopify. Retry, or reconnect if authorization expired.",
+      fr: "Impossible de vérifier les autorisations Shopify. Réessayez ou reconnectez la boutique si l’autorisation a expiré.",
+    },
+  "تعذر الاتصال لفحص صلاحيات Shopify. أعد المحاولة.": {
+    en: "Could not connect to check Shopify permissions. Please retry.",
+    fr: "Connexion impossible pour vérifier les autorisations Shopify. Réessayez.",
+  },
+  "تسجيل الدخول بحساب التاجر": {
+    en: "Sign in with a merchant account",
+    fr: "Se connecter avec un compte marchand",
+  },
+  "حالة الربط لا تثبت الصلاحيات الفعلية. نفّذ الفحص من هذه الصفحة باستخدام جلسة حساب التاجر.":
+    {
+      en: "Connection status does not prove effective permissions. Run the check here using your merchant session.",
+      fr: "L’état de connexion ne prouve pas les autorisations effectives. Lancez la vérification ici avec votre session marchand.",
+    },
 };

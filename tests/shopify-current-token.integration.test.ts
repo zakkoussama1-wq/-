@@ -1,3 +1,6 @@
+import { NextRequest } from "next/server";
+import { proxy } from "../src/proxy";
+import { authenticate } from "../src/modules/auth/store";
 import { GET as checkScopes } from "../src/app/api/integrations/shopify/scopes/route";
 import { afterEach, expect, it, vi } from "vitest";
 import { Pool } from "pg";
@@ -155,7 +158,7 @@ it.skipIf(!process.env.POSTGRES_TEST_URL)(
           { headers: { cookie: `dz_session=${cookie}` } },
         );
       expect((await checkScopes(request(token, secondMerchant))).status).toBe(
-        401,
+        403,
       );
       expect(fetchMock).not.toHaveBeenCalled();
       const first = await checkScopes(request(token));
@@ -175,6 +178,33 @@ it.skipIf(!process.env.POSTGRES_TEST_URL)(
         `SELECT merchant_id,encrypted_token,scope,updated_at FROM ${schema}.shopify_connections ORDER BY merchant_id`,
       );
       expect(stableAfter.rows).toEqual(stable.rows);
+      const calls = fetchMock.mock.calls.length;
+      const denied = await proxy(
+        new NextRequest(
+          "https://app.example.test/api/integrations/shopify/scopes",
+        ),
+      );
+      expect(denied.status).toBe(401);
+      expect(await denied.json()).toMatchObject({ code: "AUTH_REQUIRED" });
+      expect((await proxy(new NextRequest(request(token)))).status).toBe(200);
+      const legacy = await authenticate("fixture-owner-password", true);
+      expect((await proxy(new NextRequest(request(legacy)))).status).toBe(200);
+      const legacyResult = await checkScopes(request(legacy));
+      expect(legacyResult.status).toBe(403);
+      expect(await legacyResult.json()).toMatchObject({
+        code: "MERCHANT_SESSION_REQUIRED",
+      });
+      const unlinkedToken = await accountLogin(
+        "unlinked@example.test",
+        "fixture-password",
+        "Unlinked fixture",
+      );
+      const unlinked = await checkScopes(request(unlinkedToken));
+      expect(unlinked.status).toBe(409);
+      expect(await unlinked.json()).toMatchObject({
+        code: "SHOPIFY_CONNECTION_REQUIRED",
+      });
+      expect(fetchMock.mock.calls.length).toBe(calls);
       expect(process.env.DZ_SHOPIFY_ORDER_SYNC).toBe("0");
     } finally {
       await closeStoragePool();

@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ tenant: vi.fn(), credential: vi.fn() }));
-vi.mock("../src/modules/merchants/local-context", () => ({
+vi.mock("../src/modules/merchants/local-context", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("../src/modules/merchants/local-context")
+  >()),
   authenticatedShopTenant: mocks.tenant,
 }));
+import { TenantAccessError } from "../src/modules/merchants/local-context";
 vi.mock("../src/modules/integrations/shopify/connections", () => ({
   connectionCredential: mocks.credential,
 }));
@@ -100,7 +104,9 @@ it("recognizes write_products as implicitly granting product read access", async
 });
 it("refuses unauthenticated callers and disabled external integrations", async () => {
   const mock = transport([]);
-  mocks.tenant.mockRejectedValueOnce(new Error("not authenticated"));
+  mocks.tenant.mockRejectedValueOnce(
+    new TenantAccessError("AUTH_REQUIRED", 401, "يلزم تسجيل الدخول."),
+  );
   expect((await GET(request())).status).toBe(401);
   vi.stubEnv("DZ_BOOTSTRAP_MODE", "1");
   expect((await GET(request())).status).toBe(503);
@@ -143,4 +149,25 @@ it("refuses a stored credential belonging to a different shop without making an 
   expect(JSON.stringify(await response.json())).not.toMatch(
     /other-fixture-token|other-fixture.myshopify/,
   );
+});
+
+it("distinguishes tenant denial, legacy session and missing connection without asking Shopify", async () => {
+  const mock = transport([]);
+  for (const [code, status] of [
+    ["TENANT_FORBIDDEN", 403],
+    ["MERCHANT_SESSION_REQUIRED", 403],
+    ["SHOPIFY_CONNECTION_REQUIRED", 409],
+  ] as const) {
+    mocks.tenant.mockRejectedValueOnce(
+      new TenantAccessError(code, status, "تعذر السماح بهذا الفحص."),
+    );
+    const result = await GET(request());
+    expect(result.status).toBe(status);
+    expect(await result.json()).toMatchObject({ code, verified: false });
+  }
+  mocks.tenant.mockRejectedValueOnce(new Error("private-database-details"));
+  const result = await GET(request());
+  expect(result.status).toBe(503);
+  expect(await result.json()).toMatchObject({ code: "AUTH_CHECK_FAILED" });
+  expect(mock).not.toHaveBeenCalled();
 });

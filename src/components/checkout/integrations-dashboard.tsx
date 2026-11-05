@@ -6,6 +6,13 @@ import { Skeleton, Surface } from "../ui/surface";
 import { RefreshCw } from "lucide-react";
 export function IntegrationsDashboard() {
   const { t, language } = useLanguage();
+  const [scopeResult, setScopeResult] = useState<{
+    readProductsGranted: boolean;
+    writeOrdersGranted: boolean;
+  } | null>(null);
+  const [scopeError, setScopeError] = useState("");
+  const [scopeLoginRequired, setScopeLoginRequired] = useState(false);
+  const [scopeChecking, setScopeChecking] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [state, setState] = useState<{
     connected: boolean;
@@ -23,6 +30,9 @@ export function IntegrationsDashboard() {
     const controller = new AbortController();
     setLoading(true);
     setState(null);
+    setScopeResult(null);
+    setScopeError("");
+    setScopeLoginRequired(false);
     setError("");
     fetch("/api/integrations/shopify", { signal: controller.signal })
       .then(async (r) => {
@@ -39,6 +49,63 @@ export function IntegrationsDashboard() {
       });
     return () => controller.abort();
   }, [retry]);
+  async function checkScopes() {
+    if (scopeChecking) return;
+    setScopeChecking(true);
+    setScopeResult(null);
+    setScopeError("");
+    setScopeLoginRequired(false);
+    try {
+      // Match the dashboard's relative fetch API and HttpOnly session-cookie model.
+      // Do not navigate to an external link or read/transfer a token in JavaScript.
+      const response = await fetch("/api/integrations/shopify/scopes", {
+        credentials: "same-origin",
+        cache: "no-store",
+        redirect: "error",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        if (response.status === 401) {
+          setScopeLoginRequired(true);
+          setScopeError(
+            "انتهت جلسة التاجر أو لم تُرسل. سجّل الدخول من لوحة التحكم ثم أعد الفحص.",
+          );
+        } else if (data.code === "MERCHANT_SESSION_REQUIRED") {
+          setScopeLoginRequired(true);
+          setScopeError(
+            "جلسة الإدارة القديمة لا تحدد تاجرًا. سجّل الدخول ببريد حساب التاجر المرتبط بالمتجر.",
+          );
+        } else if (data.code === "TENANT_FORBIDDEN")
+          setScopeError("لا يمكن فحص صلاحيات متجر آخر.");
+        else if (data.code === "SHOPIFY_CONNECTION_REQUIRED")
+          setScopeError(
+            "هذا الحساب لا يرتبط بمتجر Shopify موثّق. أعد الربط من الحساب الصحيح.",
+          );
+        else if (data.code === "AUTH_CHECK_FAILED")
+          setScopeError("تعذر التحقق من جلسة التاجر مؤقتًا. أعد المحاولة.");
+        else
+          setScopeError(
+            "تعذر فحص الصلاحيات من Shopify. أعد المحاولة، أو أعد ربط المتجر إذا انتهى التفويض.",
+          );
+        return;
+      }
+      if (
+        data.verified !== true ||
+        typeof data.readProductsGranted !== "boolean" ||
+        typeof data.writeOrdersGranted !== "boolean"
+      )
+        throw new Error("Invalid scope response");
+      setScopeResult({
+        readProductsGranted: data.readProductsGranted,
+        writeOrdersGranted: data.writeOrdersGranted,
+      });
+    } catch {
+      setScopeError("تعذر الاتصال لفحص صلاحيات Shopify. أعد المحاولة.");
+    } finally {
+      setScopeChecking(false);
+    }
+  }
+
   return (
     <div className="integration-grid">
       <Surface className="settings-panel">
@@ -73,13 +140,9 @@ export function IntegrationsDashboard() {
           </p>
         )}
         <p className="text-sm leading-7">
-          {state?.connected
-            ? t(
-                "تُقرأ المنتجات والخيارات والأسعار من Shopify. إنشاء طلبات Shopify وإضافة نموذج الثيم مرحلتان لاحقتان.",
-              )
-            : t(
-                "الربط الحالي يطلب قراءة المنتجات فقط. لا توجد مزامنة منتجات أو إنشاء طلب Shopify تلقائي بعد. نجاح الربط ليس دليلًا على عمل تلك الميزات.",
-              )}
+          {t(
+            "حالة الربط لا تثبت الصلاحيات الفعلية. نفّذ الفحص من هذه الصفحة باستخدام جلسة حساب التاجر.",
+          )}
         </p>
         {state && !state.configured && (
           <p
@@ -198,6 +261,60 @@ export function IntegrationsDashboard() {
             </Button>
           </div>
         )}
+        <section
+          className="mt-4 space-y-3 text-sm"
+          aria-label={t("صلاحيات Shopify الفعلية")}
+        >
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading || busy || scopeChecking}
+            onClick={() => void checkScopes()}
+          >
+            {t(
+              scopeChecking
+                ? "جارٍ فحص صلاحيات Shopify…"
+                : "فحص صلاحيات Shopify",
+            )}
+          </Button>
+          <p>
+            {t(
+              "يستخدم الفحص جلسة حساب التاجر الحالية، ولا يفعّل مزامنة الطلبات.",
+            )}
+          </p>
+          {scopeResult && (
+            <div role="status" aria-label={t("نتيجة فحص صلاحيات Shopify")}>
+              <dl className="space-y-2">
+                <div>
+                  <dt dir="ltr">read_products</dt>
+                  <dd>
+                    {t(
+                      scopeResult.readProductsGranted ? "ممنوحة" : "غير ممنوحة",
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt dir="ltr">write_orders</dt>
+                  <dd>
+                    {t(
+                      scopeResult.writeOrdersGranted ? "ممنوحة" : "غير ممنوحة",
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          )}
+          {scopeError && (
+            <div role="alert">
+              <p>{t(scopeError)}</p>
+              {scopeLoginRequired && (
+                <a href="/login" className="underline">
+                  {t("تسجيل الدخول بحساب التاجر")}
+                </a>
+              )}
+            </div>
+          )}
+        </section>
         {syncMessage && <p role="status">{syncMessage}</p>}
         {url && (
           <a className="block text-emerald-800 underline" href={url}>

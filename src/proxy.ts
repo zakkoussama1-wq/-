@@ -22,6 +22,9 @@ export async function proxy(request: NextRequest) {
       "/api/integrations/shopify/callback",
       "/api/integrations/shopify/start",
       "/api/integrations/shopify",
+      // Session protection below still applies; the handler performs tenant authorization
+      // and returns distinct session/connection failures instead of generic AUTH_REQUIRED.
+      "/api/integrations/shopify/scopes",
     ];
     if (
       path.startsWith("/api/") &&
@@ -68,7 +71,10 @@ export async function proxy(request: NextRequest) {
   if (await validSession(request.cookies.get("dz_session")?.value ?? ""))
     return NextResponse.next();
   return p.startsWith("/api/")
-    ? NextResponse.json({ error: "يلزم تسجيل الدخول." }, { status: 401 })
+    ? NextResponse.json(
+        { error: "يلزم تسجيل الدخول.", code: "AUTH_REQUIRED" },
+        { status: 401, headers: { "Cache-Control": "no-store" } },
+      )
     : NextResponse.redirect(new URL("/login", request.url));
 }
 export const config = {

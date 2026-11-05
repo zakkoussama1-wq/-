@@ -1,6 +1,9 @@
 import { Session } from "@shopify/shopify-api";
 import { z } from "zod";
-import { authenticatedShopTenant } from "@/modules/merchants/local-context";
+import {
+  authenticatedShopTenant,
+  TenantAccessError,
+} from "@/modules/merchants/local-context";
 import { connectionCredential } from "@/modules/integrations/shopify/connections";
 import { shopHostname } from "@/modules/integrations/shopify/client";
 import {
@@ -28,10 +31,19 @@ export async function GET(request: Request) {
   let tenant: Awaited<ReturnType<typeof authenticatedShopTenant>>;
   try {
     tenant = await authenticatedShopTenant(request);
-  } catch {
+  } catch (error) {
+    if (error instanceof TenantAccessError)
+      return Response.json(
+        { verified: false, code: error.code, error: error.message },
+        { status: error.status, headers },
+      );
     return Response.json(
-      { error: "يلزم تسجيل الدخول إلى المتجر الموثّق." },
-      { status: 401, headers },
+      {
+        verified: false,
+        code: "AUTH_CHECK_FAILED",
+        error: "تعذر التحقق من جلسة التاجر مؤقتًا.",
+      },
+      { status: 503, headers },
     );
   }
   try {
