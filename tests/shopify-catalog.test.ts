@@ -1,3 +1,5 @@
+import { POST as saveOrder } from "../src/app/api/orders/route";
+import { listOrders, setOrderStatus } from "../src/modules/orders/repository";
 import geography from "../data/geography/catalog.json";
 import {
   changeShipping,
@@ -11,7 +13,7 @@ import { Pool } from "pg";
 import { closeStoragePool } from "../src/modules/storage/database";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { randomBytes, createHmac } from "node:crypto";
+import { randomBytes, createHmac, randomUUID } from "node:crypto";
 import {
   accountLogin,
   sessionMerchant,
@@ -37,6 +39,7 @@ it("keeps production on Shopify mode when external integration is disabled, with
   await expect(readShopifyCatalog(merchant)).rejects.toThrow("disabled");
 });
 let authToken: string;
+let fixturePrice: string, fixtureStock: number;
 let dir: string,
   merchant: string,
   deleted: boolean,
@@ -48,8 +51,8 @@ const variant = (id: number) => ({
   id: `gid://shopify/ProductVariant/${id}`,
   title: "Blue / L",
   sku: `SKU-${id}`,
-  price: "1200.50",
-  inventoryQuantity: id === 1 ? 3 : 0,
+  price: fixturePrice,
+  inventoryQuantity: id === 1 ? fixtureStock : 0,
   inventoryPolicy: "DENY",
   image: { url: "https://cdn.shopify.com/variant.webp" },
   selectedOptions: [
@@ -71,6 +74,9 @@ const product = (id: number) => ({
 beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), "dz-shopify-catalog-"));
   vi.stubEnv("AUTH_DATABASE_PATH", join(dir, "auth.sqlite"));
+  vi.stubEnv("ORDERS_DATABASE_PATH", join(dir, "orders.sqlite"));
+  fixturePrice = "1200.50";
+  fixtureStock = 3;
   vi.stubEnv("CHECKOUT_DATABASE_PATH", join(dir, "checkout.sqlite"));
   vi.stubEnv("SHIPPING_DATABASE_PATH", join(dir, "shipping.sqlite"));
   vi.stubEnv("DATABASE_URL", "");
@@ -119,6 +125,7 @@ beforeEach(async () => {
       );
       calls++;
       const body = JSON.parse(String(options?.body));
+      expect(body.query).not.toMatch(/\bmutation\b/i);
       if (body.query.includes("DzCatalogVariants"))
         return Response.json({
           data: {
@@ -433,7 +440,7 @@ it.skipIf(!process.env.POSTGRES_TEST_URL)(
     ).toBe(400);
     await expect(
       localCommerceAdapter.submit(merchant, {}, "not-an-order"),
-    ).rejects.toThrow("not implemented");
+    ).rejects.toThrow("معرف منع التكرار");
     const db = await authDb();
     try {
       expect(
@@ -446,5 +453,308 @@ it.skipIf(!process.env.POSTGRES_TEST_URL)(
     } finally {
       await db.close();
     }
+  },
+);
+
+async function orderFixture(stock = 100) {
+  vi.stubEnv("NODE_ENV", "production");
+  fixturePrice = "1200";
+  fixtureStock = stock;
+  await changeShipping(merchant, "legacy58", 0, {
+    genericOffice: true,
+    entries: [
+      {
+        scope: "wilaya",
+        target: "11",
+        rule: {
+          available: true,
+          home: { enabled: true, price: 700 },
+          office: { enabled: true, price: 555 },
+          eta: "",
+        },
+      },
+    ],
+  });
+  const input = {
+    productId: "gid://shopify/Product/1",
+    variantId: "gid://shopify/ProductVariant/1",
+    quantity: 1,
+    mode: "legacy58" as const,
+    wilayaCode: "11",
+    communeId: "dz:commune:359",
+  };
+  const quote = await localCommerceAdapter.quote(
+    merchant,
+    input,
+    input.productId,
+  );
+  return {
+    input,
+    body: {
+      customer: {
+        ...input,
+        name: "مستخدم تجريبي",
+        phone: "+213 551 234 567",
+        method: "office",
+        address: "",
+      },
+      quoteToken: quote.quoteToken,
+    },
+  };
+}
+function orderRequest(
+  body: unknown,
+  key = randomUUID(),
+  cookie = authToken,
+  product = "gid://shopify/Product/1",
+) {
+  return new Request(
+    `https://app.example.test/api/orders?product=${encodeURIComponent(product)}`,
+    {
+      method: "POST",
+      headers: {
+        origin: "https://app.example.test",
+        "content-type": "application/json",
+        "idempotency-key": key,
+        cookie: `dz_session=${cookie}`,
+      },
+      body: JSON.stringify(body),
+    },
+  );
+}
+it.skipIf(!process.env.POSTGRES_TEST_URL)(
+  "persists production COD to PostgreSQL once at 1755 DZD without Shopify writes or events",
+  async () => {
+    const { input, body: baseBody } = await orderFixture();
+    const body = {
+      ...baseBody,
+      simulation: { consent: true, visitId: randomUUID() },
+    };
+    const key = randomUUID();
+    const responses = await Promise.all([
+      saveOrder(orderRequest(body, key)),
+      saveOrder(orderRequest(body, key)),
+    ]);
+    expect(responses.map((r) => r.status).sort()).toEqual([200, 201]);
+    const receipts = await Promise.all(responses.map((r) => r.json()));
+    expect(receipts[0].orderId).toBe(receipts[1].orderId);
+    const stored = await listOrders(merchant);
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({
+      catalogSource: "shopify",
+      reservedStock: false,
+      customer: {
+        phone: "0551234567",
+        method: "office",
+        address: "",
+        wilayaCode: "11",
+        communeId: "dz:commune:359",
+      },
+      quote: {
+        unitPriceMinor: 120000,
+        methods: { office: { amountMinor: 55500, totalMinor: 175500 } },
+      },
+    });
+    expect(await listOrders("other-merchant")).toEqual([]);
+    expect(
+      (await readShopifyCatalog(merchant)).products[0].variants[0].stock,
+    ).toBe(100);
+    // Retries succeed without contacting an unavailable provider and do not reserve twice.
+    await invalidateShopifyCatalog(
+      domain,
+      "retry-provider-unavailable",
+      "fixture-hash",
+    );
+    const transport = vi.mocked(fetch);
+    transport.mockRejectedValueOnce(new Error("provider unavailable"));
+    const count = calls;
+    expect((await saveOrder(orderRequest(body, key))).status).toBe(200);
+    expect(calls).toBe(count);
+    expect(
+      (
+        await saveOrder(
+          orderRequest(
+            { ...body, customer: { ...body.customer, quantity: 2 } },
+            key,
+          ),
+        )
+      ).status,
+    ).toBe(409);
+    await setOrderStatus(merchant, stored[0].id, "confirmed");
+    await setOrderStatus(merchant, stored[0].id, "fulfilled");
+    const db = await authDb();
+    try {
+      expect(
+        (
+          await db
+            .prepare("SELECT to_regclass('simulation_events') AS events")
+            .get()
+        )?.events,
+      ).toBeNull();
+      expect(
+        (
+          await db
+            .prepare("SELECT payload FROM shopify_catalog WHERE merchant_id=?")
+            .get(merchant)
+        )?.payload,
+      ).not.toBeUndefined();
+    } finally {
+      await db.close();
+    }
+    expect((await listOrders(merchant))[0].customer.productId).toBe(
+      input.productId,
+    );
+  },
+);
+it.skipIf(!process.env.POSTGRES_TEST_URL)(
+  "rejects invalid fields, foreign tenants, stale prices and unsafe failures without leaking customer data",
+  async () => {
+    const { input, body } = await orderFixture();
+    const phone = await saveOrder(
+      orderRequest({ ...body, customer: { ...body.customer, phone: "123" } }),
+    );
+    expect(phone.status).toBe(400);
+    expect(await phone.json()).toMatchObject({
+      code: "INVALID_ORDER",
+      fields: { phone: expect.any(String) },
+    });
+    expect(
+      (await saveOrder(orderRequest(body, randomUUID(), "invalid"))).status,
+    ).toBe(401);
+    const mismatch = orderRequest(body);
+    const u = new URL(mismatch.url);
+    u.searchParams.set("store", "other-merchant");
+    expect((await saveOrder(new Request(u, mismatch))).status).toBe(401);
+    expect(
+      (
+        await saveOrder(
+          orderRequest({
+            ...body,
+            customer: { ...body.customer, communeId: "dz:commune:1006" },
+          }),
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await saveOrder(
+          orderRequest({
+            ...body,
+            customer: { ...body.customer, officeId: "invented" },
+          }),
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await saveOrder(
+          orderRequest(
+            body,
+            randomUUID(),
+            authToken,
+            "gid://shopify/Product/2",
+          ),
+        )
+      ).status,
+    ).toBe(400);
+    await changeShipping(merchant, "legacy58", 1, { genericOffice: false });
+    expect((await saveOrder(orderRequest(body))).status).toBe(422);
+    await changeShipping(merchant, "legacy58", 2, {
+      genericOffice: true,
+      entries: [
+        {
+          scope: "wilaya",
+          target: "11",
+          rule: {
+            available: true,
+            home: { enabled: true, price: 700 },
+            office: { enabled: true, price: 556 },
+            eta: "",
+          },
+        },
+      ],
+    });
+    expect((await saveOrder(orderRequest(body))).status).toBe(409);
+    const newQuote = await localCommerceAdapter.quote(
+      merchant,
+      input,
+      input.productId,
+    );
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const submit = vi
+      .spyOn(localCommerceAdapter, "submit")
+      .mockRejectedValueOnce(
+        Object.assign(new Error("secret-url customer-phone password"), {
+          code: "42501",
+        }),
+      );
+    try {
+      const unavailable = await saveOrder(
+        orderRequest({ ...body, quoteToken: newQuote.quoteToken }),
+      );
+      expect(unavailable.status).toBe(503);
+      expect(await unavailable.json()).toMatchObject({
+        code: "ORDER_SAVE_UNAVAILABLE",
+      });
+      expect(JSON.stringify(log.mock.calls)).toContain("42501");
+      expect(JSON.stringify(log.mock.calls)).not.toMatch(
+        /secret-url|customer-phone|password|مستخدم/,
+      );
+    } finally {
+      submit.mockRestore();
+      log.mockRestore();
+    }
+    expect(await listOrders(merchant)).toHaveLength(0);
+  },
+);
+it.skipIf(!process.env.POSTGRES_TEST_URL)(
+  "serializes COD stock allocations without changing Shopify stock and releases allocation on cancellation",
+  async () => {
+    const { body } = await orderFixture(1);
+    const responses = await Promise.all([
+      saveOrder(orderRequest(body)),
+      saveOrder(orderRequest(body)),
+    ]);
+    expect(responses.map((r) => r.status).sort()).toEqual([201, 422]);
+    const orders = await listOrders(merchant);
+    expect(orders).toHaveLength(1);
+    expect(
+      (await readShopifyCatalog(merchant)).products[0].variants[0].stock,
+    ).toBe(1);
+    await setOrderStatus(merchant, orders[0].id, "cancelled");
+    expect((await saveOrder(orderRequest(body))).status).toBe(201);
+    expect(
+      (await readShopifyCatalog(merchant)).products[0].variants[0].stock,
+    ).toBe(1);
+  },
+);
+
+it.skipIf(!process.env.POSTGRES_TEST_URL)(
+  "persists home delivery with normalized phone but requires a valid home address",
+  async () => {
+    const { body } = await orderFixture();
+    const home = {
+      ...body,
+      customer: { ...body.customer, method: "home", phone: "٠٥٥١٢٣٤٥٦٧" },
+    };
+    const invalid = await saveOrder(orderRequest(home));
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toMatchObject({
+      fields: { address: expect.any(String) },
+    });
+    const valid = {
+      ...home,
+      customer: { ...home.customer, address: "عنوان اختبار محلي 12" },
+    };
+    expect((await saveOrder(orderRequest(valid))).status).toBe(201);
+    const [order] = await listOrders(merchant);
+    expect(order.customer.phone).toBe("0551234567");
+    expect(order.quote.methods.home).toMatchObject({
+      amountMinor: 70000,
+      totalMinor: 190000,
+    });
+    expect(
+      (await readShopifyCatalog(merchant)).products[0].variants[0].stock,
+    ).toBe(100);
   },
 );

@@ -1,4 +1,9 @@
 import {
+  readShopifyCatalog,
+  shopifyCatalogMode,
+} from "../integrations/shopify/catalog";
+import { assertFormPricing } from "../forms/policy";
+import {
   ensureSimulationTables,
   recordSimulation,
   simulationEventId,
@@ -42,6 +47,7 @@ export interface StoredOrder {
   productName: string;
   variantName: string;
   reservedStock?: boolean;
+  catalogSource?: "shopify";
   productSku?: string;
   variantSku?: string;
   productImageUrl?: string;
@@ -58,7 +64,7 @@ async function dbOpen() {
   await db.exec(
     `PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,merchant_id TEXT NOT NULL,key TEXT NOT NULL,hash TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,data TEXT NOT NULL,UNIQUE(merchant_id,key)); CREATE INDEX IF NOT EXISTS order_tenant_date ON orders(merchant_id,created_at); CREATE TABLE IF NOT EXISTS submission_limits(merchant_id TEXT NOT NULL,phone_hash TEXT NOT NULL,bucket INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(merchant_id,phone_hash,bucket));`,
   );
-  await ensureSimulationTables(db);
+  if (process.env.NODE_ENV !== "production") await ensureSimulationTables(db);
   return db;
 }
 function decode(row: Record<string, unknown>): StoredOrder {
@@ -77,10 +83,34 @@ export async function createOrder(
     throw new CheckoutError("معرف منع التكرار غير صالح.", 400);
   const settings = await getFormSettings(merchant, productFormId);
   const input = formValidationSchema(settings).parse(raw);
+  assertFormPricing(settings, input.customer);
+  const shopify = shopifyCatalogMode();
   const hash = createHash("sha256")
     .update(JSON.stringify(input.customer))
     .digest("hex");
-  await getCheckoutCatalog(merchant);
+  // Resolve retries before any provider request. Recheck under the transaction lock below.
+  if (shopify) {
+    const previousDb = await dbOpen();
+    try {
+      const previous = await previousDb
+        .prepare("SELECT * FROM orders WHERE merchant_id=? AND key=?")
+        .get(merchant, key);
+      if (previous) {
+        if (previous.hash !== hash)
+          throw new CheckoutError(
+            "لا يمكن إعادة استخدام معرف الإرسال لطلب مختلف.",
+            409,
+          );
+        return { order: decode(previous), duplicate: true };
+      }
+    } finally {
+      await previousDb.close();
+    }
+  } else await getCheckoutCatalog(merchant);
+  // Read-only Shopify access before acquiring any order transaction/client locks.
+  const shopifyCatalog = shopify
+    ? await readShopifyCatalog(merchant)
+    : undefined;
   await getShippingState(merchant, input.customer.mode);
   const db = await dbOpen();
   try {
@@ -115,17 +145,18 @@ export async function createOrder(
         "تم تجاوز محاولات الإرسال لهذا الرقم. حاول بعد دقيقة.",
         429,
       );
-    const catalogPrefix = await db.attach(
-      checkoutDatabasePath(),
-      "checkout_store",
-    );
+    const catalogPrefix = shopify
+      ? ""
+      : await db.attach(checkoutDatabasePath(), "checkout_store");
     const shippingPrefix = await db.attach(
       shippingDatabasePath(),
       "shipping_store",
     );
-    await db.lock(`catalog:${merchant}`);
+    if (!shopify) await db.lock(`catalog:${merchant}`);
     await db.lock(`shipping:${merchant}:${input.customer.mode}`);
-    const catalog = await readCheckoutSnapshot(db, merchant, catalogPrefix);
+    const catalog =
+      shopifyCatalog ??
+      (await readCheckoutSnapshot(db, merchant, catalogPrefix));
     const shipping = await readShippingSnapshot(
       db,
       merchant,
@@ -150,7 +181,27 @@ export async function createOrder(
       );
     const product = catalog.products.find((p) => p.id === productId)!;
     const variant = product.variants.find((v) => v.id === variantId)!;
-    const reservedStock = variant.stock !== null;
+    if (shopify && variant.stock !== null) {
+      const rows = await db
+        .prepare("SELECT * FROM orders WHERE merchant_id=? AND status<>?")
+        .all(merchant, "cancelled");
+      const allocated = rows
+        .map(decode)
+        .filter(
+          (o) =>
+            o.catalogSource === "shopify" &&
+            o.customer.productId === productId &&
+            o.customer.variantId === variantId,
+        )
+        .reduce((n, o) => n + o.customer.quantity, 0);
+      if (allocated + quantity > variant.stock)
+        throw new CheckoutError(
+          "الكمية المطلوبة غير متوفرة بعد احتساب طلبات COD المحفوظة.",
+          422,
+        );
+    }
+    // Never mutate the Shopify catalog/inventory. Local COD allocations live in orders only.
+    const reservedStock = !shopify && variant.stock !== null;
     if (reservedStock) {
       variant.stock = variant.stock! - quantity;
       await db
@@ -167,10 +218,13 @@ export async function createOrder(
       customer: input.customer,
       quote,
       reservedStock,
+      ...(shopify ? { catalogSource: "shopify" as const } : {}),
       productName: product.name,
       variantName: variant.name,
       simulation:
-        input.simulation && (await simulationSettings(db, merchant)).enabled
+        process.env.NODE_ENV !== "production" &&
+        input.simulation &&
+        (await simulationSettings(db, merchant)).enabled
           ? input.simulation
           : undefined,
       productSku: product.sku,
@@ -230,7 +284,7 @@ export async function setOrderStatus(
   status: OrderStatus,
 ) {
   status = statusSchema.parse(status);
-  await getCheckoutCatalog(merchant);
+  if (!shopifyCatalogMode()) await getCheckoutCatalog(merchant);
   const db = await dbOpen();
   try {
     await db.exec("BEGIN IMMEDIATE");
@@ -286,6 +340,7 @@ export async function setOrderStatus(
       .prepare("UPDATE orders SET status=? WHERE merchant_id=? AND id=?")
       .run(status, merchant, id);
     if (
+      process.env.NODE_ENV !== "production" &&
       order.simulation &&
       (status === "confirmed" || status === "fulfilled")
     ) {

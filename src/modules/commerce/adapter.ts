@@ -36,9 +36,6 @@ export const localCommerceAdapter: CommerceAdapter = {
     shopifyCatalogMode()
       ? readShopifyCatalog(merchant)
       : getCheckoutCatalog(merchant),
-  submit: (...args) =>
-    process.env.NODE_ENV === "production"
-      ? Promise.reject(new Error("Shopify order workflow is not implemented"))
-      : createOrder(...args),
+  submit: createOrder,
   orders: listOrders,
 };

@@ -32,7 +32,10 @@ export async function proxy(request: NextRequest) {
         await localMerchantId(request);
       } catch {
         return NextResponse.json(
-          { error: "Authenticated Shopify tenant required" },
+          {
+            error: "يلزم تسجيل الدخول إلى متجر Shopify الموثّق.",
+            code: "AUTH_REQUIRED",
+          },
           { status: 401, headers: { "Cache-Control": "no-store" } },
         );
       }
