@@ -21,4 +21,9 @@ data/media/
 
 # Shopify CLI local state (account selections and generated runtime state).
 .shopify/
+# Real Shopify app selections/configuration stay local; commit only the example.
+shopify.app.toml
+shopify.app.*.toml
 data/shopify-test/
+
+test-results-storefront/

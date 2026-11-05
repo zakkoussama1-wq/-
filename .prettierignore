@@ -8,3 +8,8 @@ data/geography/
 
 .next-local*
 test-results-local
+
+# Generated storefront production bundle; format its source instead.
+extensions/*/assets/*.js
+
+test-results-storefront/

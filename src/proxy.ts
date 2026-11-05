@@ -14,6 +14,10 @@ export async function proxy(request: NextRequest) {
       );
     return NextResponse.next();
   }
+  // Public storefront requests authenticate Shopify App Proxy signatures inside
+  // their dedicated handlers; merchant endpoints retain their existing guards.
+  if (/^\/api\/storefront\/(bootstrap|communes|quote|validate)$/.test(path))
+    return NextResponse.next();
   // This handler authenticates the same hashed merchant session in a PostgreSQL
   // READ ONLY transaction. Avoid schema-initializing auth helpers on this probe.
   if (
@@ -88,6 +92,7 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
+    "/api/storefront/:path*",
     "/api/health",
     "/api/auth",
     "/api/shopify/webhooks",

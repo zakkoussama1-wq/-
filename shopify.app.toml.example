@@ -20,3 +20,11 @@ api_version = "2026-10"
 
 [build]
 automatically_update_urls_on_dev = false
+
+# Phase 2 storefront proxy template only; do not deploy without owner review.
+# Review/request write_app_proxy as required by the target Shopify configuration.
+# No order-sync scope or sending flag is enabled by this section.
+[app_proxy]
+url = "https://REPLACE_WITH_YOUR_HTTPS_HOST/api/storefront"
+prefix = "apps"
+subpath = "dz-cod"

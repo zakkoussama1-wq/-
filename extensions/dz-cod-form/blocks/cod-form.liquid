@@ -1,0 +1,45 @@
+{% if product != blank %}
+  {% assign dz_locale = block.settings.language %}
+  {% if dz_locale == 'auto' %}{% assign dz_locale = request.locale.iso_code %}{% endif %}
+  <dz-cod-form
+    {{ block.shopify_attributes }}
+    data-product-id="{{ product.id }}"
+    data-runtime-url="{{ 'dz-cod-runtime.js' | asset_url | escape }}"
+    data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+    data-language="{{ dz_locale | escape }}"
+    data-title="{{ block.settings.title | escape }}"
+    data-button-text="{{ block.settings.button_text | escape }}"
+    data-intro-text="{{ block.settings.intro_text | escape }}"
+    data-footer-text="{{ block.settings.footer_text | escape }}"
+    data-proxy-path="{{ block.settings.proxy_path | escape }}"
+    data-accent="{{ block.settings.accent }}"
+    data-background="{{ block.settings.background }}"
+    data-ink="{{ block.settings.ink }}"
+    data-width="{{ block.settings.width }}"
+    data-align="{{ block.settings.align }}"
+  >
+    <noscript>يرجى تفعيل JavaScript لعرض نموذج التحقق. / Enable JavaScript to view the validation form.</noscript>
+  </dz-cod-form>
+{% endif %}
+{% schema %}
+{
+ "name":"DZ COD Form — Phase 2",
+ "target":"section",
+ "javascript":"dz-cod.js",
+ "enabled_on":{"templates":["product"]},
+ "settings":[
+  {"type":"paragraph","content":"Validation preview only. This block does not save orders or send orders to Shopify. Add it to a product section that supports app blocks."},
+  {"type":"select","id":"language","label":"Language / اللغة","default":"auto","options":[{"value":"auto","label":"Store language"},{"value":"ar","label":"العربية"},{"value":"fr","label":"Français"},{"value":"en","label":"English"}]},
+  {"type":"text","id":"title","label":"Heading / العنوان"},
+  {"type":"textarea","id":"intro_text","label":"Introduction / نص المقدمة"},
+  {"type":"text","id":"button_text","label":"Validation button / نص زر التحقق"},
+  {"type":"textarea","id":"footer_text","label":"Footer / نص التذييل"},
+  {"type":"color","id":"accent","label":"Button colour / لون الزر","default":"#166534"},
+  {"type":"color","id":"background","label":"Card colour / لون البطاقة","default":"#ffffff"},
+  {"type":"color","id":"ink","label":"Text colour / لون النص","default":"#202223"},
+  {"type":"range","id":"width","label":"Maximum width / العرض الأقصى","min":280,"max":600,"step":10,"default":480,"unit":"px"},
+  {"type":"select","id":"align","label":"Alignment / المحاذاة","default":"start","options":[{"value":"start","label":"Theme position"},{"value":"center","label":"Center"}]},
+  {"type":"text","id":"proxy_path","label":"App Proxy path","default":"/apps/dz-cod","info":"Must match this store's configured App Proxy path. Never enter a full external URL."}
+ ]
+}
+{% endschema %}
