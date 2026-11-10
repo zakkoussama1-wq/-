@@ -1,3 +1,4 @@
+import { AuthError, isAccountConflict } from "./errors";
 import { isLocalDemo } from "../../lib/local-demo";
 import { Database as DatabaseSync } from "../storage/database";
 import { mkdirSync } from "node:fs";
@@ -174,7 +175,9 @@ export async function accountLogin(
       const merchant = crypto.randomUUID();
       try {
         await db
-          .prepare("INSERT INTO accounts VALUES(?,?,?,?,?)")
+          .prepare(
+            "INSERT INTO accounts(merchant_id,email,name,salt,hash) VALUES(?,?,?,?,?)",
+          )
           .run(
             merchant,
             email,
@@ -182,8 +185,14 @@ export async function accountLogin(
             salt,
             scryptSync(password, salt, 64).toString("hex"),
           );
-      } catch {
-        throw new Error("تعذر إنشاء الحساب بهذا البريد.");
+      } catch (error) {
+        if (isAccountConflict(error))
+          throw new AuthError(
+            "AUTH_REGISTRATION_REJECTED",
+            409,
+            "تعذر إنشاء الحساب بهذا البريد. إذا كان لديك حساب بالفعل، استخدم تسجيل الدخول.",
+          );
+        throw error;
       }
     }
     const row = await db

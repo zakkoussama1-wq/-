@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { defaultFormSettings } from "../../src/modules/forms/settings";
 const bundle = readFileSync("extensions/dz-cod-form/assets/dz-cod.js", "utf8"),
   runtime = readFileSync(
     "extensions/dz-cod-form/assets/dz-cod-runtime.js",
@@ -52,6 +53,10 @@ async function mount(
     failure?: boolean;
     badQuote?: boolean;
     belowFold?: boolean;
+    horizon?: boolean;
+    observerMissing?: boolean;
+    designMode?: boolean;
+    customDesign?: typeof defaultFormSettings;
     unsafeRuntime?: boolean;
     runtimeFailure?: boolean;
   } = {},
@@ -75,6 +80,36 @@ async function mount(
         body: runtime,
       });
     }
+    if (
+      req.isNavigationRequest() &&
+      options.horizon &&
+      url.pathname === "/editor"
+    )
+      return route.fulfill({
+        contentType: "text/html",
+        body: '<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><h1>Theme Editor test shell</h1><iframe title="Storefront preview" src="https://storefront.test/products/fixture" style="width:100%;height:900px;border:0"></iframe></body></html>',
+      });
+    if (req.isNavigationRequest() && options.horizon)
+      return route.fulfill({
+        contentType: "text/html",
+        body: readFileSync("tests/fixtures/horizon-product.html", "utf8")
+          .replace(
+            "/*__EXTENSION_CSS__*/",
+            readFileSync("extensions/dz-cod-form/assets/dz-cod.css", "utf8"),
+          )
+          .replace(
+            "__APP_BLOCK__",
+            block(options.locale)
+              .replace(
+                "<dz-cod-form ",
+                `<dz-cod-form data-design-mode="${options.designMode ?? true}" `,
+              )
+              .replace(
+                "></dz-cod-form>",
+                '><div data-dz-placeholder role="status">جار تحميل نموذج DZ…</div></dz-cod-form>',
+              ),
+          ),
+      });
     if (req.isNavigationRequest())
       return route.fulfill({
         contentType: "text/html",
@@ -124,12 +159,15 @@ async function mount(
               },
             ],
             design: {
+              ...defaultFormSettings,
+              elements: { ...defaultFormSettings.elements, variant: true },
               title: "اطلب منتجك",
               buttonColor: "#166534",
-              background: "#fff",
+              background: "#ffffff",
               textColor: "#202223",
               deliveryMode: "both",
               officePickupInstructions: "",
+              ...options.customDesign,
             },
           },
         });
@@ -209,15 +247,30 @@ async function mount(
       });
     throw new Error("Unexpected remote request " + req.url());
   });
-  await page.goto("https://storefront.test/products/fixture");
-  await page.addScriptTag({ content: bundle });
+  await page.goto(
+    options.horizon
+      ? "https://storefront.test/editor"
+      : "https://storefront.test/products/fixture",
+  );
+  const frame = options.horizon
+    ? page.frames().find((f) => f.url().includes("/products/fixture"))!
+    : page.mainFrame();
+  if (options.observerMissing)
+    await frame.evaluate(() => {
+      Object.defineProperty(window, "IntersectionObserver", {
+        value: undefined,
+        configurable: true,
+      });
+    });
+  await frame.addScriptTag({ content: bundle });
   return {
     requests,
+    frame,
     runtimeRequests: () => runtimeRequests,
     recover: () => {
       failure = false;
     },
-    form: page.locator("dz-cod-form:not([hidden])").locator("form.card"),
+    form: frame.locator("dz-cod-form:not([hidden])").locator("form.card"),
   };
 }
 async function selectLocation(form: ReturnType<Page["locator"]>) {
@@ -458,4 +511,178 @@ test("retries a failed runtime download without exposing the error or creating o
   await expect(widget.form).toBeVisible();
   expect(widget.runtimeRequests()).toBe(2);
   expect(widget.requests.every((r) => r.op !== "validate")).toBe(true);
+});
+
+test("Horizon Theme Editor iframe shows the form, inherits saved design and follows modern and legacy variant events", async ({
+  page,
+}, testInfo) => {
+  const design = {
+    ...defaultFormSettings,
+    buttonColor: "#123456",
+    title: "نموذجي داخل Horizon",
+    elements: { ...defaultFormSettings.elements, variant: true },
+  };
+  const { frame, form, runtimeRequests } = await mount(page, {
+    horizon: true,
+    customDesign: design,
+  });
+  await expect(form).toBeVisible();
+  await expect(form.getByRole("heading", { name: design.title })).toBeVisible();
+  await expect(form.locator("button.submit")).toHaveCSS(
+    "background-color",
+    "rgb(18, 52, 86)",
+  );
+  expect(runtimeRequests()).toBe(1);
+  await frame.evaluate(() => {
+    const event = new Event("product:select", { bubbles: true });
+    Object.defineProperty(event, "promise", {
+      value: Promise.resolve({
+        variant: { id: "gid://shopify/ProductVariant/12" },
+        detail: { productId: "1", resource: { id: "12" } },
+      }),
+    });
+    document.querySelector("variant-picker")!.dispatchEvent(event);
+  });
+  await expect(form.getByLabel("اللون أو المقاس", { exact: true })).toHaveValue(
+    "gid://shopify/ProductVariant/12",
+  );
+  await frame.evaluate(() =>
+    document.querySelector("variant-picker")!.dispatchEvent(
+      new CustomEvent("variant:update", {
+        bubbles: true,
+        detail: { productId: "1", resource: { id: 11 } },
+      }),
+    ),
+  );
+  await expect(form.getByLabel("اللون أو المقاس", { exact: true })).toHaveValue(
+    "gid://shopify/ProductVariant/11",
+  );
+  await frame.evaluate(() => {
+    const block = document.querySelector(".shopify-app-block")!;
+    const html = block.innerHTML;
+    block.innerHTML = html;
+    block.dispatchEvent(
+      new CustomEvent("shopify:section:load", { bubbles: true }),
+    );
+  });
+  await expect(form).toBeVisible();
+  await expect(form).toHaveCount(1);
+  expect(runtimeRequests()).toBe(1);
+  await selectLocation(form);
+  await expect(form.locator("button.submit")).toBeEnabled();
+  await frame.evaluate(() => {
+    let finish: (value: unknown) => void = () => {};
+    const event = new Event("product:select", { bubbles: true });
+    Object.defineProperty(event, "promise", {
+      value: new Promise((resolve) => {
+        finish = resolve;
+      }),
+    });
+    Object.assign(window, {
+      finishHorizonSelection: () =>
+        finish({ variant: null, detail: { productId: "1", resource: null } }),
+    });
+    document.querySelector("variant-picker")!.dispatchEvent(event);
+  });
+  await expect(form.locator("button.submit")).toBeDisabled();
+  await expect(form.getByLabel("اللون أو المقاس", { exact: true })).toHaveValue(
+    "",
+  );
+  await frame.evaluate(() =>
+    (
+      window as unknown as { finishHorizonSelection: () => void }
+    ).finishHorizonSelection(),
+  );
+  await expect(form.locator("button.submit")).toBeDisabled();
+  await frame.evaluate(() =>
+    document.querySelector("variant-picker")!.dispatchEvent(
+      new CustomEvent("variant:update", {
+        bubbles: true,
+        detail: { productId: "1", resource: { id: 11 } },
+      }),
+    ),
+  );
+  await expect(form.locator("button.submit")).toBeEnabled();
+  if (testInfo.project.name === "mobile")
+    await expect(frame.locator(".product-information")).toHaveCSS(
+      "display",
+      "block",
+    );
+  const frameHeight = await frame.evaluate(
+    () => document.documentElement.scrollHeight,
+  );
+  await page.locator("iframe").evaluate((el, height) => {
+    (el as HTMLIFrameElement).style.height = height + "px";
+  }, frameHeight + 40);
+  await page.screenshot({
+    path: testInfo.outputPath("horizon-preview.png"),
+    fullPage: true,
+  });
+});
+
+test("Horizon iframe displays a useful runtime error and recovers without cookies", async ({
+  page,
+}) => {
+  const { frame, form } = await mount(page, {
+    horizon: true,
+    runtimeFailure: true,
+  });
+  await expect(frame.getByRole("alert")).toContainText(
+    "RUNTIME_DOWNLOAD_FAILED",
+  );
+  await frame
+    .getByRole("button", { name: "إعادة المحاولة", exact: true })
+    .click();
+  await expect(form).toBeVisible();
+});
+
+test("loads safely without IntersectionObserver support", async ({ page }) => {
+  const { form } = await mount(page, { observerMissing: true });
+  await expect(form).toBeVisible();
+});
+
+test("saved optional/hidden contacts, field order, text and font are applied to the actual storefront form", async ({
+  page,
+}) => {
+  const customDesign = {
+    ...defaultFormSettings,
+    locale: "en" as const,
+    fontFamily: "serif" as const,
+    fontSize: 18,
+    buttonText: "Validate my selection",
+    contact: {
+      name: "optional" as const,
+      phone: "hidden" as const,
+      address: "optional" as const,
+    },
+    order: [
+      "quantity",
+      "variant",
+      "geography",
+      "method",
+      "name",
+      "address",
+      "phone",
+    ] as typeof defaultFormSettings.order,
+    elements: { ...defaultFormSettings.elements, variant: true },
+  };
+  const { form } = await mount(page, { customDesign });
+  await expect(form).toBeVisible();
+  await expect(form).toHaveAttribute("lang", "en");
+  await expect(form.getByLabel("Phone", { exact: true })).toHaveCount(0);
+  await expect(form.locator('input[autocomplete="name"]')).not.toHaveAttribute(
+    "required",
+    "",
+  );
+  await expect(form.locator("button.submit")).toHaveText(
+    "Validate my selection",
+  );
+  await expect(form).toHaveCSS("font-size", "18px");
+  const positions = await form.locator("label").evaluateAll((labels) =>
+    labels.map((el) => ({
+      text: el.textContent,
+      order: getComputedStyle(el).order,
+    })),
+  );
+  expect(positions.find((p) => p.text?.includes("Quantity"))?.order).toBe("0");
 });

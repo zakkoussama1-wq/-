@@ -18,6 +18,25 @@ export async function proxy(request: NextRequest) {
   // their dedicated handlers; merchant endpoints retain their existing guards.
   if (/^\/api\/storefront\/(bootstrap|communes|quote|validate)$/.test(path))
     return NextResponse.next();
+  // Isolated Embedded API verifies App Bridge JWTs itself. Never delegate old
+  // merchant/order/OAuth endpoints or accept a browser-selected tenant here.
+  if (path.startsWith("/api/embedded/")) return NextResponse.next();
+  if (path === "/shopify" || path.startsWith("/shopify/")) {
+    const shop =
+      request.nextUrl.searchParams.get("shop") ??
+      process.env.SHOPIFY_SHOP ??
+      "";
+    const frame = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop)
+      ? ` https://${shop}`
+      : "";
+    const response = NextResponse.next();
+    response.headers.set(
+      "Content-Security-Policy",
+      `frame-ancestors https://admin.shopify.com${frame};`,
+    );
+    response.headers.set("Cache-Control", "no-store");
+    return response;
+  }
   // This handler authenticates the same hashed merchant session in a PostgreSQL
   // READ ONLY transaction. Avoid schema-initializing auth helpers on this probe.
   if (
@@ -92,6 +111,8 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
+    "/shopify/:path*",
+    "/api/embedded/:path*",
     "/api/storefront/:path*",
     "/api/health",
     "/api/auth",

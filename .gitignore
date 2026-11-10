@@ -27,3 +27,7 @@ shopify.app.*.toml
 data/shopify-test/
 
 test-results-storefront/
+
+test-results-embedded/
+
+.next-embedded*/

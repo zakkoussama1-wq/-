@@ -1,0 +1,16 @@
+dz-cod-form:not([data-mounted]) {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  padding: 16px;
+  border: 1px solid #d6d9de;
+  border-radius: 12px;
+  color: #202223;
+  background: #fff;
+  font:
+    14px/1.6 system-ui,
+    sans-serif;
+}
+dz-cod-form[hidden] {
+  display: none !important;
+}

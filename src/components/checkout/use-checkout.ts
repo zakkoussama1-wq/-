@@ -23,6 +23,18 @@ export function useCheckoutCatalog(refresh: number) {
     fetch(storefrontUrl("/api/checkout/catalog"), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) {
+          if (response.status === 401)
+            throw new RangeError(
+              "يلزم تسجيل الدخول بحساب DZ Lead Form Pro المرتبط بالمتجر لعرض النموذج.",
+            );
+          if (response.status === 403)
+            throw new RangeError(
+              "جلسة الدخول لا تسمح بتحميل بيانات هذا المتجر. استخدم حساب التاجر المرتبط.",
+            );
+          if (response.status === 409)
+            throw new RangeError(
+              "الحساب غير مرتبط بمتجر Shopify موثّق. راجع صفحة التكاملات.",
+            );
           if (response.status === 404)
             throw new RangeError("المنتج أو الخيار المحدد غير متاح.");
           throw new Error();

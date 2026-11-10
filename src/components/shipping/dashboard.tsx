@@ -1,4 +1,5 @@
 "use client";
+import { merchantFetch, inEmbeddedAdmin } from "@/lib/merchant-fetch";
 import { useLanguage } from "@/components/language-provider";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -164,8 +165,10 @@ function ShippingManager({
   useEffect(() => {
     const abort = new AbortController();
     Promise.all([
-      fetch(`/api/shipping?mode=${mode}`, { signal: abort.signal }),
-      fetch(`/api/geography/wilayas?mode=${mode}`, { signal: abort.signal }),
+      merchantFetch(`/api/shipping?mode=${mode}`, { signal: abort.signal }),
+      merchantFetch(`/api/geography/wilayas?mode=${mode}`, {
+        signal: abort.signal,
+      }),
     ])
       .then(async ([a, b]) => {
         if (!a.ok || !b.ok) throw new Error();
@@ -196,7 +199,7 @@ function ShippingManager({
     setError("");
     setNotice("");
     try {
-      const response = await fetch("/api/shipping", {
+      const response = await merchantFetch("/api/shipping", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode, revision: state.revision, ...change }),
@@ -244,7 +247,7 @@ function ShippingManager({
     }
     setCommunesLoading(true);
     try {
-      const response = await fetch(
+      const response = await merchantFetch(
         `/api/geography/communes?mode=${mode}&wilayaCode=${code}`,
         { signal: controller.signal },
       );
@@ -498,7 +501,27 @@ function ShippingManager({
               {t("استيراد CSV")}
             </Button>
             <Button asChild variant="outline" size="sm">
-              <a href={`/api/shipping/csv?mode=${mode}`}>
+              <a
+                href={`/api/shipping/csv?mode=${mode}`}
+                onClick={async (event) => {
+                  if (!inEmbeddedAdmin()) return;
+                  event.preventDefault();
+                  try {
+                    const response = await merchantFetch(
+                      `/api/shipping/csv?mode=${mode}`,
+                    );
+                    if (!response.ok) throw new Error();
+                    const url = URL.createObjectURL(await response.blob());
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "shipping.csv";
+                    link.click();
+                    URL.revokeObjectURL(url);
+                  } catch {
+                    setError("تعذر تصدير أسعار الشحن.");
+                  }
+                }}
+              >
                 <Download size={14} />
                 {t("تصدير أسعار CSV")}
               </a>

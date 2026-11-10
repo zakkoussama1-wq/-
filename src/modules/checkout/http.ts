@@ -2,12 +2,18 @@ import { localCommerceAdapter } from "../commerce/adapter";
 import { requestedProduct } from "../forms/product-form";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { TenantAccessError } from "../merchants/local-context";
 import { localMerchantId } from "../merchants/local-context";
 import { ConflictError } from "../shipping/repository";
 import { updateDiscount } from "./repository";
 import { discountUpdateSchema, pricingInputSchema } from "./schema";
 import { CheckoutError, validateCheckout } from "./service";
 function fail(error: unknown) {
+  if (error instanceof TenantAccessError)
+    return NextResponse.json(
+      { code: error.code, error: error.message },
+      { status: error.status, headers: { "Cache-Control": "no-store" } },
+    );
   if (error instanceof ZodError)
     return NextResponse.json(
       {

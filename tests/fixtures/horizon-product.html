@@ -1,0 +1,79 @@
+<!-- Local test scaffold based on Shopify/Horizon 99604908f1af345214ece67b9e2c5660886f37ea:
+ sections/product-information.liquid, blocks/_product-details.liquid, snippets/group.liquid.
+ This is a reduced DOM fixture, not a live Theme Editor or a complete Liquid renderer. -->
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body {
+        margin: 16px;
+        background: #f6f6f6;
+        font: 14px system-ui;
+      }
+      .product-information {
+        display: grid;
+        grid-template-columns: 1fr minmax(280px, 480px);
+        gap: 30px;
+      }
+      .product-details {
+        display: flex;
+        align-self: start;
+        justify-content: center;
+      }
+      .group-block {
+        width: 100%;
+        min-width: 0;
+      }
+      .layout-panel-flex {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      @media (max-width: 749px) {
+        .product-information {
+          display: block;
+        }
+      }
+    </style>
+    <style>
+      /*__EXTENSION_CSS__*/
+    </style>
+  </head>
+  <body>
+    <main>
+      <section
+        class="shopify-section product-information"
+        id="shopify-section-main"
+      >
+        <div class="product-media-gallery">Shopify product image</div>
+        <div
+          class="product-details"
+          id="ProductInformation-main"
+          data-testid="product-information-details"
+        >
+          <div
+            class="group-block group-block--height-fit group-block--width-fill"
+          >
+            <div
+              class="group-block-content group-block-content--design-mode layout-panel-flex layout-panel-flex--column"
+            >
+              <h1>Shopify product</h1>
+              <variant-picker data-product-id="1"></variant-picker
+              ><product-form-component data-product-id="1"
+                ><form action="/cart/add">
+                  <input type="hidden" name="id" value="11" /><input
+                    type="number"
+                    name="quantity"
+                    value="1"
+                    aria-label="Theme quantity"
+                  /></form
+              ></product-form-component>
+              <div class="shopify-app-block">__APP_BLOCK__</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

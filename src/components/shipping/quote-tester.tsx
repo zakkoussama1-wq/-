@@ -1,4 +1,5 @@
 "use client";
+import { merchantFetch } from "@/lib/merchant-fetch";
 import { useLanguage } from "@/components/language-provider";
 import { useState } from "react";
 import type { AdministrativeMode } from "@/modules/contracts";
@@ -31,7 +32,7 @@ export function QuoteTester({
     if (!code) return;
     setBusy(true);
     try {
-      const r = await fetch(
+      const r = await merchantFetch(
         `/api/geography/communes?mode=${mode}&wilayaCode=${code}`,
       );
       if (!r.ok) throw new Error("تعذر تحميل بلديات الاختبار.");
@@ -47,7 +48,7 @@ export function QuoteTester({
     setError("");
     setResult(null);
     try {
-      const r = await fetch(
+      const r = await merchantFetch(
         `/api/shipping/quote?${new URLSearchParams({ mode, wilayaCode: wilaya, communeId: commune, method })}`,
       );
       const data = await r.json();

@@ -18,6 +18,8 @@
   box-sizing: border-box;
 }
 .card {
+  font-family: var(--dz-font, system-ui, sans-serif);
+  font-size: var(--dz-font-size, 14px);
   background: var(--dz-background, #fff);
   color: var(--dz-ink, #202223);
   padding: 18px;
@@ -26,6 +28,20 @@
   box-shadow: 0 3px 14px #00000008;
   margin: 0;
   overflow: hidden;
+}
+.fields {
+  display: flex;
+  flex-direction: column;
+}
+.locations.one {
+  grid-template-columns: 1fr;
+}
+.card.plain {
+  border: 0;
+  box-shadow: none;
+}
+.card:not(.compact) {
+  padding: 24px;
 }
 h2 {
   font-size: 17px;

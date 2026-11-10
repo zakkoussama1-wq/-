@@ -1,33 +1,43 @@
-{% if product != blank %}
+{% assign dz_product = closest.product | default: product %}
+{% if dz_product != blank %}
   {% assign dz_locale = block.settings.language %}
   {% if dz_locale == 'auto' %}{% assign dz_locale = request.locale.iso_code %}{% endif %}
   <dz-cod-form
     {{ block.shopify_attributes }}
-    data-product-id="{{ product.id }}"
+    data-product-id="{{ dz_product.id }}"
+    data-design-mode="{{ request.design_mode }}"
     data-runtime-url="{{ 'dz-cod-runtime.js' | asset_url | escape }}"
-    data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+    data-variant-id="{{ dz_product.selected_or_first_available_variant.id }}"
     data-language="{{ dz_locale | escape }}"
+    data-settings-source="{{ block.settings.settings_source | default: 'dashboard' | escape }}"
     data-title="{{ block.settings.title | escape }}"
     data-button-text="{{ block.settings.button_text | escape }}"
     data-intro-text="{{ block.settings.intro_text | escape }}"
     data-footer-text="{{ block.settings.footer_text | escape }}"
     data-proxy-path="{{ block.settings.proxy_path | escape }}"
-    data-accent="{{ block.settings.accent }}"
-    data-background="{{ block.settings.background }}"
-    data-ink="{{ block.settings.ink }}"
-    data-width="{{ block.settings.width }}"
-    data-align="{{ block.settings.align }}"
+    data-accent="{{ block.settings.accent | escape }}"
+    data-background="{{ block.settings.background | escape }}"
+    data-ink="{{ block.settings.ink | escape }}"
+    data-width="{{ block.settings.width | escape }}"
+    data-align="{{ block.settings.align | escape }}"
   >
+    <div data-dz-placeholder role="status">
+      {% case dz_locale %}{% when 'fr' %}Chargement du formulaire DZ… Si les champs restent absents, rechargez ou contactez la boutique. [LOADER_PENDING]{% when 'en' %}Loading DZ form… If fields do not appear, reload or contact the store. [LOADER_PENDING]{% else %}جار تحميل نموذج DZ… إذا لم تظهر الحقول، أعد التحميل أو تواصل مع المتجر. [LOADER_PENDING]{% endcase %}
+    </div>
     <noscript>يرجى تفعيل JavaScript لعرض نموذج التحقق. / Enable JavaScript to view the validation form.</noscript>
   </dz-cod-form>
+{% else %}
+  <div role="alert">DZ COD Form: اختر منتجًا لمعاينة النموذج. / Select a product to preview this block. [PRODUCT_CONTEXT_MISSING]</div>
 {% endif %}
 {% schema %}
 {
  "name":"DZ COD Form — Phase 2",
  "target":"section",
  "javascript":"dz-cod.js",
+ "stylesheet":"dz-cod.css",
  "enabled_on":{"templates":["product"]},
  "settings":[
+  {"type":"select","id":"settings_source","label":"Design settings source","default":"dashboard","options":[{"value":"dashboard","label":"DZ merchant dashboard"},{"value":"block","label":"Block colours and text overrides"}]},
   {"type":"paragraph","content":"Validation preview only. This block does not save orders or send orders to Shopify. Add it to a product section that supports app blocks."},
   {"type":"select","id":"language","label":"Language / اللغة","default":"auto","options":[{"value":"auto","label":"Store language"},{"value":"ar","label":"العربية"},{"value":"fr","label":"Français"},{"value":"en","label":"English"}]},
   {"type":"text","id":"title","label":"Heading / العنوان"},

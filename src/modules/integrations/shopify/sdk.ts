@@ -45,7 +45,7 @@ export function shopifyConfiguration() {
 }
 
 // Lazy initialization keeps local-demo builds usable without Shopify credentials.
-export function shopifySdk() {
+export function shopifySdk(embedded = false) {
   const { redirect } = shopifyConfiguration();
   return shopifyApi({
     apiKey: process.env.SHOPIFY_CLIENT_ID!,
@@ -54,7 +54,7 @@ export function shopifySdk() {
     hostScheme: "https",
     apiVersion: SHOPIFY_API_VERSION,
     scopes: requestedShopifyScopes(),
-    isEmbeddedApp: false,
+    isEmbeddedApp: embedded,
     // Dev Dashboard distribution choice is separate from admin-created custom apps.
     isCustomStoreApp: false,
     logger: { level: LogSeverity.Error, httpRequests: false, log: () => {} },

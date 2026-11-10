@@ -28,6 +28,8 @@ const config: NextConfig = {
     "/api/health": ["./scripts/postgres-schema.sql"],
     "/api/geography/*": ["./data/geography.sqlite"],
     "/api/storefront/*": ["./data/geography.sqlite"],
+    "/api/embedded/*": ["./data/geography.sqlite"],
+    "/shopify/*": ["./src/storefront/style.css"],
   },
 };
 export default config;

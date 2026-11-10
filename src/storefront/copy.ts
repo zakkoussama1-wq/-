@@ -64,6 +64,16 @@ const words: Record<string, readonly [string, string, string]> = {
     "Could not load prices. Please retry.",
     "Chargement des tarifs impossible. Réessayez.",
   ],
+  connection: [
+    "تعذر تحميل الأسعار: اتصال Shopify الحالي غير صالح. تواصل مع المتجر.",
+    "Could not load prices: Shopify authorization is unavailable. Contact the store.",
+    "Tarifs indisponibles : autorisation Shopify inutilisable. Contactez la boutique.",
+  ],
+  proxy: [
+    "تعذر التحقق من مسار المتجر App Proxy. تواصل مع المتجر.",
+    "The store App Proxy could not be verified. Contact the store.",
+    "Impossible de vérifier l’App Proxy. Contactez la boutique.",
+  ],
   changed: [
     "تغيرت الأسعار؛ راجع الإجمالي الجديد ثم تحقق مجددًا.",
     "Prices changed; review the new total and validate again.",
@@ -88,6 +98,21 @@ export function text(key: string, language: Locale) {
   ];
 }
 export function errorText(code: unknown, language: Locale) {
+  if (
+    typeof code === "string" &&
+    [
+      "STOREFRONT_UNAVAILABLE",
+      "CATALOG_UNAVAILABLE",
+      "STOREFRONT_POLICY_UNSUPPORTED",
+      "PRODUCT_VARIANTS_UNSUPPORTED",
+      "STORE_CURRENCY_UNSUPPORTED",
+    ].includes(code)
+  )
+    return text("network", language) + ` [${code}]`;
+  if (code === "CATALOG_AUTH_UNAVAILABLE" || code === "STORE_NOT_INSTALLED")
+    return text("connection", language) + ` [${code}]`;
+  if (code === "PROXY_INVALID" || code === "ORIGIN_DENIED")
+    return text("proxy", language) + ` [${code}]`;
   return text(
     code === "RATE_LIMITED"
       ? "rate"

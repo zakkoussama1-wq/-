@@ -88,6 +88,9 @@ export const formSettingsSchema = z
     badgeText: z.string().max(100).default("الدفع عند الاستلام"),
     officePickupInstructions: z.string().trim().max(300).optional(),
     compact: z.boolean().default(true),
+    locale: z.enum(["auto", "ar", "fr", "en"]).default("auto"),
+    fontFamily: z.enum(["system", "serif", "theme"]).default("system"),
+    fontSize: z.number().int().min(12).max(20).default(14),
     columns: z.enum(["one", "two"]).default("two"),
     elements: elementSchema.default(elementDefaults),
     contact: z

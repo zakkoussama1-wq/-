@@ -31,12 +31,21 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const changeLanguage = (value: Language) => {
     document.documentElement.lang = value;
     document.documentElement.dir = value === "ar" ? "rtl" : "ltr";
-    localStorage.setItem("dz-language", value);
+    try {
+      localStorage.setItem("dz-language", value);
+    } catch {
+      /* Language remains in memory when embedded storage is unavailable. */
+    }
     setLanguage(value);
   };
 
   useEffect(() => {
-    const value = localStorage.getItem("dz-language");
+    let value: string | null = null;
+    try {
+      value = localStorage.getItem("dz-language");
+    } catch {
+      /* No persistent storage is required for App Bridge authentication. */
+    }
     if (value === "fr" || value === "en") {
       document.documentElement.lang = value;
       document.documentElement.dir = "ltr";
@@ -46,20 +55,21 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
-    document.title =
-      language === "ar"
+    document.title = pathname.startsWith("/shopify")
+      ? "DZ Lead Form Pro | Shopify"
+      : language === "ar"
         ? "DZ Lead Form Pro | تجربة محلية"
         : language === "fr"
           ? "DZ Lead Form Pro | Démonstration locale"
           : "DZ Lead Form Pro | Local demo";
-  }, [language]);
+  }, [language, pathname]);
   const t = useCallback(
     <T,>(value: T): T => translate(value, language),
     [language],
   );
   return (
     <LanguageContext.Provider value={{ language, t, changeLanguage }}>
-      {pathname !== "/dashboard" && (
+      {pathname !== "/dashboard" && !pathname.startsWith("/shopify") && (
         <div className="app-toolbar">
           <LanguageSwitcher />
           <a className="font-bold text-emerald-800 underline" href="/form">

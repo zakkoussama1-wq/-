@@ -1,3 +1,4 @@
+import { AuthError, authFailure } from "@/modules/auth/errors";
 import { isLocalDemo } from "@/lib/local-demo";
 import { NextResponse } from "next/server";
 import {
@@ -19,38 +20,42 @@ export async function GET(request: Request) {
       },
       { headers: { "Cache-Control": "no-store" } },
     );
-  const db = await authDb();
   try {
-    const merchant = await sessionMerchant(
-      request.headers
-        .get("cookie")
-        ?.match(/(?:^|; )dz_session=([a-f0-9]+)/)?.[1] ?? "",
-    );
-    const profile = merchant
-      ? await db
-          .prepare("SELECT name FROM accounts WHERE merchant_id=?")
-          .get(merchant)
-      : null;
+    const db = await authDb();
+    try {
+      const merchant = await sessionMerchant(
+        request.headers
+          .get("cookie")
+          ?.match(/(?:^|; )dz_session=([a-f0-9]+)/)?.[1] ?? "",
+      );
+      const profile = merchant
+        ? await db
+            .prepare("SELECT name FROM accounts WHERE merchant_id=?")
+            .get(merchant)
+        : null;
+      return NextResponse.json(
+        {
+          merchantName: profile
+            ? String(profile.name)
+            : merchant
+              ? "المتجر المحلي"
+              : null,
+          configured:
+            !!(await db.prepare("SELECT 1 FROM owner WHERE id=1").get()) ||
+            !!(await db.prepare("SELECT 1 FROM accounts LIMIT 1").get()),
+          merchantId: merchant,
+        },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    } finally {
+      await db.close();
+    }
+  } catch (error) {
+    const result = authFailure(error);
     return NextResponse.json(
-      {
-        merchantName: profile
-          ? String(profile.name)
-          : merchant
-            ? "المتجر المحلي"
-            : null,
-        configured:
-          !!(await db.prepare("SELECT 1 FROM owner WHERE id=1").get()) ||
-          !!(await db.prepare("SELECT 1 FROM accounts LIMIT 1").get()),
-        merchantId: await sessionMerchant(
-          request.headers
-            .get("cookie")
-            ?.match(/(?:^|; )dz_session=([a-f0-9]+)/)?.[1] ?? "",
-        ),
-      },
-      { headers: { "Cache-Control": "no-store" } },
+      { code: result.code, error: result.error },
+      { status: result.status, headers: { "Cache-Control": "no-store" } },
     );
-  } finally {
-    await db.close();
   }
 }
 export async function POST(request: Request) {
@@ -62,7 +67,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "مصدر غير مسموح." }, { status: 403 });
   try {
     const text = await request.text();
-    if (text.length > 1024) throw new Error("طلب كبير.");
+    if (text.length > 1024)
+      throw new AuthError("AUTH_INPUT_INVALID", 413, "طلب كبير.");
     const raw = JSON.parse(text);
     const data = z
       .object({
@@ -107,9 +113,21 @@ export async function POST(request: Request) {
     });
     return r;
   } catch (e) {
+    if (e instanceof z.ZodError || e instanceof SyntaxError)
+      return NextResponse.json(
+        { code: "AUTH_INPUT_INVALID", error: "تحقق من بيانات الدخول." },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    const result = authFailure(e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "تعذر الدخول." },
-      { status: 400 },
+      { code: result.code, error: result.error },
+      {
+        status: result.status,
+        headers: {
+          "Cache-Control": "no-store",
+          ...(result.status === 429 ? { "Retry-After": "60" } : {}),
+        },
+      },
     );
   }
 }

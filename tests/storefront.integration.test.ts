@@ -9,6 +9,7 @@ import { accountLogin, sessionMerchant } from "../src/modules/auth/store";
 import { saveConnection } from "../src/modules/integrations/shopify/connections";
 import { changeShipping } from "../src/modules/shipping/repository";
 import { closeStoragePool } from "../src/modules/storage/database";
+import { defaultFormSettings } from "../src/modules/forms/settings";
 import { storefrontRequest } from "../src/modules/storefront/http";
 import { proxy } from "../src/proxy";
 import { NextRequest } from "next/server";
@@ -260,7 +261,8 @@ describe.skipIf(!base)(
         },
       });
       expect(body.wilayas).toHaveLength(58);
-      expect(body.design.title).toBe("");
+      expect(body.design.title).toBe("أكمل معلومات طلبك");
+      expect(body.design.officePickupInstructions).toBe("");
       expect(body.context).toBeTypeOf("string");
       expect(response.headers.get("cache-control")).toBe("no-store");
       expect(JSON.stringify(body)).not.toMatch(
@@ -560,6 +562,101 @@ describe.skipIf(!base)(
       );
       expect(response.status).toBe(503);
       expect(fetch).not.toHaveBeenCalled();
+    });
+    it("exposes the saved field policy, order, font and colours without product-form overrides", async () => {
+      const settings = {
+        ...defaultFormSettings,
+        title: "إعدادات متجري",
+        buttonColor: "#123456",
+        fontFamily: "serif",
+        fontSize: 18,
+        locale: "fr",
+        contact: { name: "optional", phone: "hidden", address: "optional" },
+        order: [...defaultFormSettings.order].reverse(),
+      };
+      const url = new URL(process.env.DATABASE_URL!);
+      const pool = new Pool({ connectionString: url.toString() });
+      try {
+        await pool.query(
+          "INSERT INTO form_settings VALUES($1,$2) ON CONFLICT(merchant_id) DO UPDATE SET settings=excluded.settings",
+          [merchant, JSON.stringify(settings)],
+        );
+      } finally {
+        await pool.end();
+      }
+      const { design, context } = await boot();
+      expect(design).toMatchObject({
+        title: settings.title,
+        buttonColor: settings.buttonColor,
+        contact: settings.contact,
+        order: settings.order,
+        fontFamily: "serif",
+        fontSize: 18,
+        locale: "fr",
+      });
+      const q = await (await quote(context)).json();
+      const customer = {
+        ...input(),
+        method: "office",
+        name: "",
+        phone: "",
+        address: "",
+      };
+      const out = await storefrontRequest(
+        signed("validate", {}, { context, customer, quoteToken: q.quoteToken }),
+        "validate",
+      );
+      expect(out.status).toBe(200);
+      expect(await out.json()).toMatchObject({
+        validated: true,
+        persisted: false,
+        shopifyOrderCreated: false,
+      });
+      const forged = await storefrontRequest(
+        signed(
+          "validate",
+          {},
+          {
+            context,
+            customer: { ...customer, phone: "0555123456" },
+            quoteToken: q.quoteToken,
+          },
+        ),
+        "validate",
+      );
+      expect(forged.status).toBe(400);
+    });
+    it("enforces hidden quantity and fixed geography on the server", async () => {
+      const settings = {
+        ...defaultFormSettings,
+        elements: {
+          ...defaultFormSettings.elements,
+          quantity: false,
+          geography: false,
+        },
+        fixedWilaya: "11",
+        fixedCommune: "dz:commune:359",
+      };
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      try {
+        await pool.query(
+          "INSERT INTO form_settings VALUES($1,$2) ON CONFLICT(merchant_id) DO UPDATE SET settings=excluded.settings",
+          [merchant, JSON.stringify(settings)],
+        );
+      } finally {
+        await pool.end();
+      }
+      const { context } = await boot();
+      expect((await quote(context)).status).toBe(200);
+      expect((await quote(context, { quantity: 2 })).status).toBe(400);
+      expect(
+        (
+          await quote(context, {
+            wilayaCode: "07",
+            communeId: "dz:commune:2000",
+          })
+        ).status,
+      ).toBe(400);
     });
     it("never accepts a creation operation and returns only validation flags", async () => {
       expect(

@@ -1,4 +1,32 @@
+import { embeddedMessages } from "./embedded-messages";
 export const messages: Record<string, { en: string; fr: string }> = {
+  ...embeddedMessages,
+  "يلزم تسجيل الدخول بحساب DZ Lead Form Pro المرتبط بالمتجر لعرض النموذج.": {
+    en: "Sign in with the DZ Lead Form Pro account linked to this store to view the form.",
+    fr: "Connectez-vous avec le compte DZ Lead Form Pro lié à cette boutique pour afficher le formulaire.",
+  },
+  "جلسة الدخول لا تسمح بتحميل بيانات هذا المتجر. استخدم حساب التاجر المرتبط.": {
+    en: "This session cannot load the store data. Use the linked merchant account.",
+    fr: "Cette session ne permet pas de charger les données de la boutique. Utilisez le compte marchand lié.",
+  },
+  "الحساب غير مرتبط بمتجر Shopify موثّق. راجع صفحة التكاملات.": {
+    en: "This account is not linked to a verified Shopify store. Check Integrations.",
+    fr: "Ce compte n’est pas lié à une boutique Shopify vérifiée. Consultez les intégrations.",
+  },
+  "تعذر إنشاء الحساب بهذا البريد. إذا كان لديك حساب بالفعل، استخدم تسجيل الدخول.":
+    {
+      en: "The account could not be created with this email. If you already have an account, sign in.",
+      fr: "Impossible de créer le compte avec cet e-mail. Si vous avez déjà un compte, connectez-vous.",
+    },
+  "تعذر الوصول إلى خدمة الحسابات. أعد المحاولة لاحقًا.": {
+    en: "The account service is unavailable. Please retry later.",
+    fr: "Le service des comptes est indisponible. Réessayez plus tard.",
+  },
+  "تحقق من بيانات الدخول.": {
+    en: "Check the sign-in details.",
+    fr: "Vérifiez les informations de connexion.",
+  },
+
   "زيارة الصفحة": { en: "Page view", fr: "Visite de page" },
   "عرض المنتج": { en: "Product view", fr: "Vue du produit" },
   "بدء الطلب": { en: "Checkout started", fr: "Début de commande" },

@@ -26,6 +26,7 @@ class DzCodForm extends HTMLElement {
       "data-background",
       "data-ink",
       "data-width",
+      "data-settings-source",
     ];
   }
   connectedCallback() {
@@ -66,8 +67,16 @@ class DzCodForm extends HTMLElement {
     );
   }
   private themeForm() {
-    return this.themeScope().querySelector<HTMLFormElement>(
-      'form[action*="/cart/add"]',
+    return (
+      this.closest(".product-details")?.querySelector<HTMLFormElement>(
+        'product-form-component form[action*="/cart/add"]',
+      ) ??
+      this.themeScope().querySelector<HTMLFormElement>(
+        'product-form-component form[action*="/cart/add"]',
+      ) ??
+      this.themeScope().querySelector<HTMLFormElement>(
+        'form[action*="/cart/add"]',
+      )
     );
   }
   private externalVariant() {
@@ -96,8 +105,66 @@ class DzCodForm extends HTMLElement {
     shadow.replaceChildren(style, container);
     this.root = createRoot(container);
     this.dataset.mounted = "true";
+    this.dataset.dzState = "RUNTIME_READY";
     const scope = this.themeScope(),
       sync = () => this.render();
+    let generation = 0;
+    const horizonEvent = (event: Event) => {
+      if (
+        event.target instanceof Element &&
+        (event.target.closest("product-card") ||
+          (scope !== document && !scope.contains(event.target)))
+      )
+        return;
+      type Result = {
+        productId?: string;
+        newProduct?: { id?: string | number };
+        variant?: { id?: string | number } | null;
+        detail?: {
+          productId?: string;
+          newProduct?: { id?: string | number };
+          resource?: { id?: string | number } | null;
+        };
+        resource?: { id?: string | number } | null;
+      };
+      const e = event as Event & {
+        promise?: Promise<Result>;
+        detail?: Result & { productId?: string };
+      };
+      const current = ++generation;
+      const apply = (result: Result) => {
+        if (current !== generation || !this.isConnected || !this.root) return;
+        const detail = result.detail ?? e.detail;
+        const nextProduct = detail?.newProduct?.id;
+        if (
+          nextProduct &&
+          gid(String(nextProduct), "Product") !== this.product()
+        ) {
+          this.setAttribute("data-product-id", String(nextProduct));
+          return;
+        }
+        if (
+          detail?.productId &&
+          gid(detail.productId, "Product") !== this.product()
+        )
+          return;
+        const resource = detail?.resource ?? result.resource ?? result.variant;
+        const variant = resource?.id
+          ? gid(String(resource.id), "ProductVariant")
+          : "";
+        const input = this.externalVariant();
+        if (input) input.value = variant.split("/").at(-1) ?? "";
+        this.setAttribute("data-variant-id", variant || "unavailable");
+      };
+      if (e.promise && typeof e.promise.then === "function") {
+        // Horizon resolves the new variant asynchronously. Never validate the
+        // previous variant while that selection is still in flight or fails.
+        const input = this.externalVariant();
+        if (input) input.value = "";
+        this.setAttribute("data-variant-id", "unavailable");
+        void e.promise.then(apply).catch(() => {});
+      } else if (e.detail) apply(e.detail);
+    };
     const variantEvent = (event: Event) => {
       const e = event as CustomEvent<{
         variant?: { id?: string | number };
@@ -127,6 +194,8 @@ class DzCodForm extends HTMLElement {
     scope.addEventListener("input", sync);
     document.addEventListener("variant:change", variantEvent);
     document.addEventListener("product:variant-change", variantEvent);
+    document.addEventListener("product:select", horizonEvent);
+    document.addEventListener("variant:update", horizonEvent);
     window.addEventListener("popstate", sync);
     const observer = new MutationObserver((records) => {
       if (
@@ -151,6 +220,8 @@ class DzCodForm extends HTMLElement {
       scope.removeEventListener("input", sync);
       document.removeEventListener("variant:change", variantEvent);
       document.removeEventListener("product:variant-change", variantEvent);
+      document.removeEventListener("product:select", horizonEvent);
+      document.removeEventListener("variant:update", horizonEvent);
       window.removeEventListener("popstate", sync);
     };
     this.render();
@@ -212,6 +283,10 @@ class DzCodForm extends HTMLElement {
     );
     const quantity = Number(this.externalQuantity()?.value ?? 1);
     const props: FormProps = {
+      settingsSource:
+        this.getAttribute("data-settings-source") === "block"
+          ? "block"
+          : "dashboard",
       productId: this.product(),
       variantId: variant,
       quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1,

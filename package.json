@@ -26,7 +26,8 @@
     "test:media-restart": "node scripts/test-media-restart.mjs",
     "postbuild": "node scripts/check-build-data.mjs",
     "storefront:build": "node scripts/build-storefront.mjs",
-    "test:storefront": "npm run storefront:build && playwright test --config=playwright.storefront.config.ts"
+    "test:storefront": "npm run storefront:build && playwright test --config=playwright.storefront.config.ts",
+    "test:embedded": "playwright test --config=playwright.embedded.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "7.0.0",

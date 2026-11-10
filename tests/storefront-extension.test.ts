@@ -35,7 +35,8 @@ it("declares a product-only inline Theme App Block with editable presentation an
       "proxy_path",
     ]),
   );
-  expect(liquid).toContain("product.selected_or_first_available_variant.id");
+  expect(liquid).toContain("dz_product.selected_or_first_available_variant.id");
+  expect(liquid).toContain("closest.product | default: product");
   expect(liquid).toContain("'dz-cod-runtime.js' | asset_url | escape");
   expect(
     readFileSync("extensions/dz-cod-form/assets/dz-cod.js").byteLength,

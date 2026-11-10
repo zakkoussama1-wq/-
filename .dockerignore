@@ -33,3 +33,7 @@ shopify.app.toml
 shopify.app.*.toml
 
 test-results-storefront/
+
+test-results-embedded/
+
+.next-embedded*/

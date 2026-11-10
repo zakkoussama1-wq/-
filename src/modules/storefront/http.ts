@@ -1,8 +1,11 @@
-import { defaultFormSettings } from "../forms/settings";
+import { storefrontCustomerSchema } from "./settings";
 import { consumeReadBudget } from "./budget";
 import { z } from "zod";
 import { listWilayas, listCommunes } from "../geography/repository";
-import { pricingInputSchema, checkoutInputSchema } from "../checkout/schema";
+import {
+  pricingInputSchema,
+  checkoutSchemaForSettings,
+} from "../checkout/schema";
 import { priceCheckoutSnapshot, CheckoutError } from "../checkout/service";
 import {
   proxyShop,
@@ -12,11 +15,21 @@ import {
   StorefrontError,
 } from "./context";
 import { readStorefrontData } from "./data";
+import { shopifyConfiguration } from "../integrations/shopify/sdk";
 const headers = {
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
 };
 export async function storefrontRequest(request: Request, operation: string) {
+  return storefrontForRequest(request, operation, () => proxyShop(request));
+}
+/** Only server-side embedded handlers may supply a JWT-verified tenant. */
+export async function storefrontForRequest(
+  request: Request,
+  operation: string,
+  authenticate: () => Promise<string>,
+  preview = false,
+) {
   try {
     const methods: Record<string, string> = {
       bootstrap: "GET",
@@ -31,7 +44,7 @@ export async function storefrontRequest(request: Request, operation: string) {
         { code: "METHOD_NOT_ALLOWED" },
         { status: 405, headers: { ...headers, Allow: methods[operation] } },
       );
-    const shop = await proxyShop(request),
+    const shop = await authenticate(),
       url = new URL(request.url);
     consumeReadBudget(shop);
     if (operation === "communes") {
@@ -70,7 +83,7 @@ export async function storefrontRequest(request: Request, operation: string) {
           ? z
               .object({
                 context: z.string().max(2048),
-                customer: checkoutInputSchema,
+                customer: storefrontCustomerSchema,
                 quoteToken: z.string().regex(/^[a-f0-9]{64}$/),
               })
               .strict()
@@ -97,7 +110,11 @@ export async function storefrontRequest(request: Request, operation: string) {
     const data = await readStorefrontData(shop, productId);
     if (operation === "bootstrap") {
       const origin = z.url().parse(url.searchParams.get("origin"));
-      if (!data.origins.includes(origin))
+      if (
+        !(preview
+          ? origin === shopifyConfiguration().origin
+          : data.origins.includes(origin))
+      )
         throw new StorefrontError("ORIGIN_DENIED", 403);
       return Response.json(
         {
@@ -108,14 +125,7 @@ export async function storefrontRequest(request: Request, operation: string) {
           wilayas: listWilayas("legacy58"),
           genericOffice: data.shipping.genericOffice,
           design: {
-            title:
-              data.settings.title === defaultFormSettings.title
-                ? ""
-                : data.settings.title,
-            buttonColor: data.settings.buttonColor,
-            background: data.settings.background,
-            textColor: data.settings.textColor,
-            deliveryMode: data.settings.deliveryMode,
+            ...data.settings,
             officePickupInstructions:
               data.settings.officePickupInstructions ?? "",
           },
@@ -148,6 +158,7 @@ export async function storefrontRequest(request: Request, operation: string) {
     if (operation === "quote") return Response.json(quote, { headers });
     if (!body || !("customer" in body))
       throw new StorefrontError("INVALID_INPUT", 400);
+    checkoutSchemaForSettings(data.settings.contact).parse(body.customer);
     if (!quote.methods[body.customer.method].available)
       throw new StorefrontError("DELIVERY_UNAVAILABLE", 422);
     if (quote.quoteToken !== body.quoteToken)

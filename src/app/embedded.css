@@ -1,0 +1,123 @@
+.embedded-app {
+  max-width: 1400px;
+  margin: auto;
+  padding: 24px;
+  color: #202223;
+  font:
+    14px/1.6 system-ui,
+    sans-serif;
+}
+.embedded-app ui-nav-menu {
+  display: none;
+}
+.embedded-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.embedded-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+.embedded-app h2 {
+  font-size: 17px;
+  font-weight: 650;
+  margin: 18px 0 12px;
+}
+.embedded-app p {
+  margin: 10px 0;
+}
+.embedded-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.embedded-tabs a {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: white;
+}
+.embedded-tabs a[aria-current] {
+  background: #e3f1df;
+  border-color: #63955c;
+}
+.embedded-studio {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.embedded-panel {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 20px;
+  min-width: 0;
+}
+.embedded-app label {
+  display: block;
+  margin: 12px 0;
+}
+.embedded-app input:not([type="checkbox"]),
+.embedded-app select {
+  display: block;
+  width: 100%;
+  border: 1px solid #aaa;
+  border-radius: 7px;
+  padding: 8px;
+  min-height: 40px;
+  margin-top: 5px;
+}
+.embedded-app input[type="color"] {
+  max-width: 100px;
+}
+.embedded-app button {
+  border: 1px solid #858585;
+  border-radius: 7px;
+  background: #fff;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.embedded-header button {
+  background: #303030;
+  color: #fff;
+}
+.embedded-app button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.embedded-check {
+  display: flex !important;
+  gap: 8px;
+  align-items: center;
+}
+.embedded-order li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 7px 0;
+}
+.embedded-order span {
+  flex: 1;
+}
+.embedded-notice {
+  padding: 12px;
+  background: #fff4cc;
+  border-radius: 8px;
+}
+.embedded-app [role="alert"] {
+  padding: 12px;
+  background: #fff0ef;
+  border-radius: 8px;
+}
+@media (max-width: 850px) {
+  .embedded-studio {
+    grid-template-columns: 1fr;
+  }
+  .embedded-app {
+    padding: 12px;
+  }
+}

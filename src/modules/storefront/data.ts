@@ -4,7 +4,7 @@ import { z } from "zod";
 import { postgresConfiguration } from "../storage/database";
 import { inspectOfflineCredential } from "../integrations/shopify/connections";
 import { formSettingsSchema, defaultFormSettings } from "../forms/settings";
-import { productFormSettings } from "../forms/product-form";
+import { storefrontSettings } from "./settings";
 import { discountSchema, type CheckoutCatalog } from "../checkout/schema";
 import { entrySchema, type ShippingState } from "../shipping/schema";
 import { priceMinor } from "../integrations/shopify/catalog";
@@ -63,18 +63,14 @@ export async function readStorefrontData(shop: string, productId: string) {
         "SELECT settings FROM form_settings WHERE merchant_id=$1",
         [merchant],
       );
-      settings = productFormSettings(
+      settings = storefrontSettings(
         design.rows[0]
           ? formSettingsSchema.parse(JSON.parse(design.rows[0].settings))
           : defaultFormSettings,
         productId,
       );
-      settings = {
-        ...settings,
-        administrativeMode: "legacy58",
-        elements: { ...settings.elements, geography: true, method: true },
-        contact: { name: "required", phone: "required", address: "required" },
-      };
+      if (settings.administrativeMode !== "legacy58")
+        throw new StorefrontError("STOREFRONT_POLICY_UNSUPPORTED");
       const rules = await db.query(
         "SELECT scope,target,rule_json FROM shipping_rules WHERE merchant_id=$1 AND mode='legacy58' ORDER BY scope,target",
         [merchant],

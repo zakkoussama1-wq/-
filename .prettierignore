@@ -13,3 +13,7 @@ test-results-local
 extensions/*/assets/*.js
 
 test-results-storefront/
+
+test-results-embedded/
+
+.next-embedded*/
